@@ -67,7 +67,7 @@ jobs:
             ${{ inputs.sdk_version }}
 
       - name: Build solution
-        run: dotnet build Pixelery.slnx -c Release -p:Platform=x64 -nologo
+        run: dotnet build Pixelery.slnx -c Release -nologo
 
       - name: Publish Pixelery (single self-contained exe)
         run: |
