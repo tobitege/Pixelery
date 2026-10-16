@@ -49,6 +49,8 @@ public static class PaletteFactory
 
     public static int CuratedCount => Curated.Length;
 
+    public static IEnumerable<string> CuratedNames => Curated.Select(c => c.Name);
+
     public static Palette Create(Random rng, PaletteFamily family, BackgroundTone tone)
     {
         var (name, colors) = family switch

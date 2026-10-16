@@ -85,20 +85,37 @@ jobs:
             -nologo
           if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
 
-      - name: Collect release asset
+      - name: Publish abstractimg CLI (single self-contained exe)
         run: |
-          $files = Get-ChildItem ./publish -File
-          $files | Format-Table Name, Length
+          $version = '${{ needs.validate.outputs.version }}'
+          dotnet publish AbstractImg.Cli/AbstractImg.Cli.csproj `
+            -c Release `
+            -r win-x64 `
+            -p:Version=$version `
+            -p:AssemblyVersion="$version.0" `
+            -p:FileVersion="$version.0" `
+            -o publish-cli `
+            -nologo
+          if ($LASTEXITCODE -ne 0) { throw 'CLI publish failed.' }
+
+      - name: Collect release assets
+        run: |
+          foreach ($folder in './publish', './publish-cli') {
+            $files = Get-ChildItem $folder -File
+            $files | Format-Table Name, Length
+            if ($files.Count -ne 1) { throw "Expected a single file in $folder, found $($files.Count)." }
+          }
           if (-not (Test-Path ./publish/AbstractImg.exe)) { throw 'AbstractImg.exe missing in publish output.' }
-          if ($files.Count -ne 1) { throw "Expected a single file in publish output, found $($files.Count)." }
+          if (-not (Test-Path ./publish-cli/abstractimg.exe)) { throw 'abstractimg.exe missing in CLI publish output.' }
           New-Item -ItemType Directory -Force ./final | Out-Null
           Copy-Item ./publish/AbstractImg.exe ./final/AbstractImg-Windows-x64.exe
+          Copy-Item ./publish-cli/abstractimg.exe ./final/abstractimg-cli-Windows-x64.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: AbstractImg-Windows-x64
-          path: ./final/AbstractImg-Windows-x64.exe
+          path: ./final/*.exe
           if-no-files-found: error
 
   publish:
@@ -171,11 +188,12 @@ jobs:
 
           ## 🎨 Download
 
-          Single self-contained executable (no .NET or Windows App SDK install required). Just download and run.
+          Single self-contained executables (no .NET or Windows App SDK install required). Just download and run.
 
-          | Platform | Download |
-          |----------|----------|
-          | Windows x64 | `AbstractImg-Windows-x64.exe` |
+          | Asset | Description |
+          |-------|-------------|
+          | `AbstractImg-Windows-x64.exe` | App (Windows x64) |
+          | `abstractimg-cli-Windows-x64.exe` | Command line tool: generate, render, setbackground, setscreensaver (run with `--help`) |
           APP
 
           echo "=== Release Notes ==="

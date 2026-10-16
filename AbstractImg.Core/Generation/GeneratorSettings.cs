@@ -27,6 +27,12 @@ public sealed class GeneratorSettings
 
     public List<string> Styles { get; set; } = [.. StyleCatalog.All.Select(s => s.Id)];
 
+    /// <summary>
+    /// Style ids that existed when the settings were last saved. Styles added to the app later are selected
+    /// automatically on load (see <see cref="SelectNewStyles"/>), while styles the user deselected stay off.
+    /// </summary>
+    public List<string> KnownStyles { get; set; } = [];
+
     public List<PaletteFamily> Palettes { get; set; } = [PaletteFamily.Curated, PaletteFamily.Harmony, PaletteFamily.Cosine];
 
     public List<BackgroundTone> Tones { get; set; } = [BackgroundTone.Dark, BackgroundTone.Light, BackgroundTone.Vivid];
@@ -74,6 +80,25 @@ public sealed class GeneratorSettings
     /// <summary>Master seed as text; empty means a new random seed for every run.</summary>
     public string Seed { get; set; } = string.Empty;
 
+    /// <summary>The styles of the first release; settings files without <see cref="KnownStyles"/> knew exactly these.</summary>
+    private static readonly string[] FirstReleaseStyles =
+    [
+        "mesh-gradient", "aurora", "gradient-field", "bokeh", "nebula", "bauhaus", "truchet", "low-poly", "subdivision",
+        "circle-packing", "memphis", "isometric", "halftone", "kaleidoscope", "op-art", "flow-field", "marble", "topographic",
+        "watercolor", "paper-layers", "ridgelines", "stained-glass", "plasma", "fractal", "harmonograph", "synthwave",
+        "glitch", "pixel-mosaic", "neon-glow"
+    ];
+
+    /// <summary>Selects styles that were added since the settings were saved and marks all current styles as known.</summary>
+    public void SelectNewStyles()
+    {
+        IEnumerable<string> known = KnownStyles.Count > 0 ? KnownStyles : FirstReleaseStyles;
+        var knownSet = new HashSet<string>(known, StringComparer.OrdinalIgnoreCase);
+        foreach (var style in StyleCatalog.All.Where(s => !knownSet.Contains(s.Id) && !Styles.Contains(s.Id)))
+            Styles.Add(style.Id);
+        KnownStyles = [.. StyleCatalog.All.Select(s => s.Id)];
+    }
+
     public List<SizeChoice> BuildSizePool() =>
         SizeCatalog.BuildPool(AspectRatios, Orientations, LongEdges, FixedSizes);
 
@@ -81,6 +106,7 @@ public sealed class GeneratorSettings
     {
         var clone = (GeneratorSettings)MemberwiseClone();
         clone.Styles = [.. Styles];
+        clone.KnownStyles = [.. KnownStyles];
         clone.Palettes = [.. Palettes];
         clone.Tones = [.. Tones];
         clone.Details = [.. Details];

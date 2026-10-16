@@ -48,13 +48,37 @@ namespace AbstractImg.Views
         public void Initialize(AppShell shell)
         {
             _shell = shell;
-            BuildSections();
-            InitializeRunPanel();
+            StartButton.IsEnabled = false;
+            AddPlaceholders();
+            UpdateHeroFade();
+            HeroBadgeUpdate();
+            Loaded += (_, _) => _ = RenderHeroAsync(true);
+            _buildSteps = BuildSteps().GetEnumerator();
+            CompositionTarget.Rendering += OnBuildFrame;
+        }
+
+        private IEnumerator<Action>? _buildSteps;
+        private bool _firstFrameShown;
+
+        /// <summary>Runs one build step per frame; the very first frame shows the empty shell.</summary>
+        private void OnBuildFrame(object? sender, object e)
+        {
+            if (!_firstFrameShown)
+            {
+                _firstFrameShown = true;
+                return;
+            }
+            if (_buildSteps != null && _buildSteps.MoveNext())
+            {
+                _buildSteps.Current();
+                return;
+            }
+            CompositionTarget.Rendering -= OnBuildFrame;
+            _buildSteps = null;
             _initialized = true;
             UpdateSummary();
-            UpdateHeroFade();
+            UpdateNamePreview();
             ApplyScale();
-            Loaded += (_, _) => _ = RenderHeroAsync(true);
         }
 
         /// <summary>Registers a text update that runs now and again after every language change.</summary>
@@ -120,6 +144,7 @@ namespace AbstractImg.Views
         {
             _runCts?.Cancel();
             _previewCts?.Cancel();
+            _slideshow?.Close();
             AppSettings.SaveGenerator();
         }
 
@@ -214,7 +239,8 @@ namespace AbstractImg.Views
             var problems = Settings.Validate();
             foreach (var key in problems)
                 ValidationPanel.Children.Add(new DaisyAlert { Variant = DaisyAlertVariant.Warning, Message = L(key) });
-            GenerateButton.IsEnabled = problems.Count == 0 && !IsRunning;
+            UpdateStartButton();
+            UpdateSlideshowSummary();
             HeroBadgeUpdate();
         }
 

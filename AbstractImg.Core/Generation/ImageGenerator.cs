@@ -44,6 +44,20 @@ public sealed class GenerationRun
 
     public long BytesWritten => Interlocked.Read(ref _bytes);
 
+    /// <summary>
+    /// Percent for display with one decimal, rounded up so progress shows early; 100 only once every image is done, never above.
+    /// </summary>
+    public double Percent
+    {
+        get
+        {
+            var done = Completed;
+            if (Total <= 0 || done >= Total)
+                return Total <= 0 ? 0 : 100;
+            return Math.Clamp(Math.Ceiling(done * 1000.0 / Total) / 10.0, 0, 99.9);
+        }
+    }
+
     public string? FirstError => Volatile.Read(ref _firstError);
 
     public GenerationPreview? Preview => Volatile.Read(ref _preview);

@@ -823,7 +823,7 @@ public sealed class OpArtStyle : ArtStyle
 
     public override string Id => "op-art";
     public override string Name => "Op Art";
-    public override StyleCategory Category => StyleCategory.Geometric;
+    public override StyleCategory Category => StyleCategory.Illusions;
 
     public override void Render(RenderContext ctx)
     {

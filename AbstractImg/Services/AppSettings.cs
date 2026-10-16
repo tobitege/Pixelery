@@ -1,6 +1,4 @@
 using System.IO;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using AbstractImg.Core.Generation;
 
 namespace AbstractImg.Services
@@ -114,6 +112,21 @@ namespace AbstractImg.Services
         /// <summary>Renders the style previews with the enabled palettes and tones.</summary>
         public static bool PreviewsFollowColors { get; set; } = true;
 
+        /// <summary>Seconds between two slideshow images.</summary>
+        public static int SlideshowSeconds { get; set; } = 8;
+
+        /// <summary>Slideshow in full screen (true) or in a window.</summary>
+        public static bool SlideshowFullScreen { get; set; } = true;
+
+        /// <summary>Cross-fade between slideshow images.</summary>
+        public static bool SlideshowCrossfade { get; set; } = true;
+
+        /// <summary>Show style, palette and seed of the current slideshow image.</summary>
+        public static bool SlideshowShowInfo { get; set; }
+
+        /// <summary>Slideshow seed; empty means a new random sequence every time.</summary>
+        public static string SlideshowSeed { get; set; } = string.Empty;
+
         private static void LoadOptions()
         {
             foreach (var line in StateStorageProvider.Instance.LoadLines(OptionsKey))
@@ -137,6 +150,21 @@ namespace AbstractImg.Services
                     case nameof(PreviewsFollowColors) when bool.TryParse(value, out var b):
                         PreviewsFollowColors = b;
                         break;
+                    case nameof(SlideshowSeconds) when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i):
+                        SlideshowSeconds = Math.Clamp(i, 1, 3600);
+                        break;
+                    case nameof(SlideshowFullScreen) when bool.TryParse(value, out var b):
+                        SlideshowFullScreen = b;
+                        break;
+                    case nameof(SlideshowCrossfade) when bool.TryParse(value, out var b):
+                        SlideshowCrossfade = b;
+                        break;
+                    case nameof(SlideshowShowInfo) when bool.TryParse(value, out var b):
+                        SlideshowShowInfo = b;
+                        break;
+                    case nameof(SlideshowSeed):
+                        SlideshowSeed = value;
+                        break;
                 }
             }
         }
@@ -148,7 +176,12 @@ namespace AbstractImg.Services
                 $"{nameof(LivePreview)}={LivePreview}",
                 $"{nameof(PreviewIntervalMs)}={PreviewIntervalMs.ToString(CultureInfo.InvariantCulture)}",
                 $"{nameof(OpenFolderWhenDone)}={OpenFolderWhenDone}",
-                $"{nameof(PreviewsFollowColors)}={PreviewsFollowColors}"
+                $"{nameof(PreviewsFollowColors)}={PreviewsFollowColors}",
+                $"{nameof(SlideshowSeconds)}={SlideshowSeconds.ToString(CultureInfo.InvariantCulture)}",
+                $"{nameof(SlideshowFullScreen)}={SlideshowFullScreen}",
+                $"{nameof(SlideshowCrossfade)}={SlideshowCrossfade}",
+                $"{nameof(SlideshowShowInfo)}={SlideshowShowInfo}",
+                $"{nameof(SlideshowSeed)}={SlideshowSeed}"
             ]);
         }
 
@@ -163,9 +196,7 @@ namespace AbstractImg.Services
                 var path = System.IO.Path.Combine(StateDirectory, GeneratorFile);
                 if (File.Exists(path))
                 {
-                    var settings = JsonSerializer.Deserialize(File.ReadAllText(path), AppJsonContext.Default.GeneratorSettings);
-                    if (settings != null)
-                        return settings;
+                    return SettingsJson.Load(path);
                 }
             }
             catch
@@ -179,9 +210,7 @@ namespace AbstractImg.Services
         {
             try
             {
-                Directory.CreateDirectory(StateDirectory);
-                File.WriteAllText(System.IO.Path.Combine(StateDirectory, GeneratorFile),
-                    JsonSerializer.Serialize(Generator, AppJsonContext.Default.GeneratorSettings));
+                SettingsJson.Save(System.IO.Path.Combine(StateDirectory, GeneratorFile), Generator);
             }
             catch
             {
@@ -190,11 +219,5 @@ namespace AbstractImg.Services
         }
 
         #endregion
-    }
-
-    [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
-    [JsonSerializable(typeof(GeneratorSettings))]
-    internal partial class AppJsonContext : JsonSerializerContext
-    {
     }
 }

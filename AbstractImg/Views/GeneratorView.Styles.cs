@@ -19,34 +19,13 @@ namespace AbstractImg.Views
         private int _previewSeed = Random.Shared.Next();
         private DaisyBadge? _styleCountBadge;
 
+        private StackPanel? _stylesBody;
+
+        /// <summary>The styles section with its header; categories are added one by one (<see cref="AddStyleCategory"/>).</summary>
         private Border BuildStylesSection()
         {
             var body = new StackPanel { Spacing = 18 };
-            foreach (var group in StyleCatalog.All.GroupBy(s => s.Category))
-            {
-                var category = group.Key;
-                var check = new DaisyCheckBox { Variant = DaisyCheckBoxVariant.Primary, VerticalAlignment = VerticalAlignment.Center };
-                Localize(() => check.Content = L($"Category_{category}"));
-                check.Click += (_, _) => ToggleCategory(category);
-                _categoryChecks[category] = check;
-
-                var grid = new WrapPanel { MinItemWidth = 220 * SizeFactor, HorizontalSpacing = 14, VerticalSpacing = 14 };
-                foreach (var style in group)
-                {
-                    var card = new StyleCard(style) { IsSelected = Settings.Styles.Contains(style.Id) };
-                    card.Toggled += (_, _) => OnCardToggled(card);
-                    card.PreviewRequested += (_, _) => _shell?.ShowStylePreview(style);
-                    _cards.Add(card);
-                    grid.Children.Add(card);
-                }
-                _styleGrids.Add(grid);
-
-                var block = new StackPanel { Spacing = 10 };
-                block.Children.Add(check);
-                block.Children.Add(grid);
-                body.Children.Add(block);
-            }
-
+            _stylesBody = body;
             var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
             _styleCountBadge = new DaisyBadge { Variant = DaisyBadgeVariant.Primary, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
             actions.Children.Add(_styleCountBadge);
@@ -67,8 +46,37 @@ namespace AbstractImg.Views
             };
             actions.Children.Add(shuffle);
 
-            UpdateStyleSelectionUi();
             return Section("AppIconBrush", "Section_Styles", "Section_StylesHint", body, actions);
+        }
+
+        /// <summary>Adds the cards of one category and starts rendering their previews.</summary>
+        private void AddStyleCategory(IGrouping<StyleCategory, ArtStyle> group)
+        {
+            var category = group.Key;
+            var check = new DaisyCheckBox { Variant = DaisyCheckBoxVariant.Primary, VerticalAlignment = VerticalAlignment.Center };
+            Localize(() => check.Content = L($"Category_{category}"));
+            check.Click += (_, _) => ToggleCategory(category);
+            _categoryChecks[category] = check;
+
+            var grid = new WrapPanel { MinItemWidth = 220 * SizeFactor, HorizontalSpacing = 14, VerticalSpacing = 14 };
+            var cards = new List<StyleCard>();
+            foreach (var style in group)
+            {
+                var card = new StyleCard(style) { IsSelected = Settings.Styles.Contains(style.Id) };
+                card.Toggled += (_, _) => OnCardToggled(card);
+                card.PreviewRequested += (_, _) => _shell?.ShowStylePreview(style);
+                cards.Add(card);
+                grid.Children.Add(card);
+            }
+            _cards.AddRange(cards);
+            _styleGrids.Add(grid);
+
+            var block = new StackPanel { Spacing = 10 };
+            block.Children.Add(check);
+            block.Children.Add(grid);
+            _stylesBody?.Children.Add(block);
+            UpdateStyleSelectionUi();
+            RenderCards(cards);
         }
 
         private DaisyButton ActionButton(string key, Action onClick)
@@ -127,21 +135,28 @@ namespace AbstractImg.Views
                 check.IsChecked = selected == cards.Count ? true : selected == 0 ? false : null;
             }
             if (_styleCountBadge != null)
-                _styleCountBadge.Content = $"{_cards.Count(c => c.IsSelected)} / {_cards.Count}";
+                SetBadgeText(_styleCountBadge, $"{_cards.Count(c => c.IsSelected)} / {_cards.Count}");
         }
 
         /// <summary>Renders all card previews again (new seed or changed color settings).</summary>
         private void RefreshPreviews()
         {
             _previewCts?.Cancel();
-            var cts = new CancellationTokenSource();
-            _previewCts = cts;
+            _previewCts = new CancellationTokenSource();
+            RenderCards(_cards);
+        }
+
+        /// <summary>Renders the previews of the given cards within the current preview batch.</summary>
+        private void RenderCards(IEnumerable<StyleCard> cards)
+        {
+            _previewCts ??= new CancellationTokenSource();
+            var cts = _previewCts;
             var settings = Settings.Clone();
             var follow = AppSettings.PreviewsFollowColors;
             var scale = XamlRoot?.RasterizationScale ?? 1;
             var width = (int)(PreviewWidth * Math.Min(scale, 1.5));
             var height = (int)(PreviewHeight * Math.Min(scale, 1.5));
-            foreach (var card in _cards)
+            foreach (var card in cards)
                 _ = RenderCardAsync(card, settings, follow, width, height, cts.Token);
         }
 

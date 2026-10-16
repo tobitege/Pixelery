@@ -80,10 +80,6 @@ namespace AbstractImg.Views
         private void SeedDiceButton_Click(object sender, RoutedEventArgs e) =>
             SeedInput.Text = Random.Shared.Next(1, int.MaxValue).ToString(CultureInfo.InvariantCulture);
 
-        private void GenerateButton_Click(object sender, RoutedEventArgs e) => StartRun();
-
-        private void CancelButton_Click(object sender, RoutedEventArgs e) => CancelRun();
-
         private void OpenFolderButton_Click(object sender, RoutedEventArgs e)
         {
             var folder = _run?.OutputFolder ?? Settings.OutputFolder;
@@ -113,10 +109,7 @@ namespace AbstractImg.Views
             _shownPreview = null;
 
             SetLocked(true);
-            GenerateButton.Visibility = Visibility.Collapsed;
             ProgressPanel.Visibility = Visibility.Visible;
-            CancelButton.Visibility = Visibility.Visible;
-            CancelButton.IsEnabled = true;
             OpenFolderButton.Visibility = Visibility.Collapsed;
             ResultAlert.Visibility = Visibility.Collapsed;
             PreviewImage.Source = null;
@@ -128,6 +121,7 @@ namespace AbstractImg.Views
             _progressTimer ??= CreateProgressTimer();
             _progressTimer.Start();
             UpdateProgressTexts();
+            UpdateStartButton();
             _ = AwaitRunAsync(completion);
         }
 
@@ -136,7 +130,7 @@ namespace AbstractImg.Views
             if (_runCts == null)
                 return;
             _runCts.Cancel();
-            CancelButton.IsEnabled = false;
+            UpdateStartButton();
         }
 
         /// <summary>Panels have no IsEnabled in WinUI; block input and dim the configuration while a run is active.</summary>
@@ -181,8 +175,6 @@ namespace AbstractImg.Views
             await UpdatePreviewAsync();
 
             SetLocked(false);
-            GenerateButton.Visibility = Visibility.Visible;
-            CancelButton.Visibility = Visibility.Collapsed;
             OpenFolderButton.Visibility = Visibility.Visible;
             PreviewLoading.Visibility = Visibility.Collapsed;
             ShowResult();
@@ -231,7 +223,7 @@ namespace AbstractImg.Views
             var elapsed = run.Watch.Elapsed;
             var rate = elapsed.TotalSeconds > 0.2 ? done / elapsed.TotalSeconds : 0;
             ProgressCount.Text = string.Format(culture, "{0:N0} / {1:N0}", done, run.Total);
-            var percent = run.Total == 0 ? 0 : done * 100.0 / run.Total;
+            var percent = run.Percent;
             ProgressPercent.Text = string.Format(culture, "{0:0.0} %", percent);
             ProgressBar.Value = percent;
 

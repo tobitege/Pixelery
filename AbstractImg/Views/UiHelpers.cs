@@ -106,6 +106,18 @@ namespace AbstractImg.Views
 
         public static string? Icon(string resourceKey) => Application.Current.Resources[resourceKey] as string;
 
+        /// <summary>
+        /// Updates a badge text. Setting DaisyBadge.Content again after the badge loaded throws (Flowery.WinUI 1.3.0),
+        /// so loaded badges get their text through BadgeContent.
+        /// </summary>
+        public static void SetBadgeText(DaisyBadge badge, string text)
+        {
+            if (badge.IsLoaded)
+                badge.BadgeContent = text;
+            else
+                badge.Content = text;
+        }
+
         public static Geometry ToGeometry(string pathData) =>
             (Geometry)Microsoft.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(typeof(Geometry), pathData);
 

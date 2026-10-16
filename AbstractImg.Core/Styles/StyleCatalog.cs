@@ -20,7 +20,6 @@ public static class StyleCatalog
         new IsometricStyle(),
         new HalftoneStyle(),
         new KaleidoscopeStyle(),
-        new OpArtStyle(),
 
         new FlowFieldStyle(),
         new MarbleStyle(),
@@ -37,7 +36,17 @@ public static class StyleCatalog
         new SynthwaveStyle(),
         new GlitchStyle(),
         new PixelMosaicStyle(),
-        new NeonGlowStyle()
+        new NeonGlowStyle(),
+
+        new OpArtStyle(),
+        new RotatingSnakesStyle(),
+        new CafeWallStyle(),
+        new ScintillatingGridStyle(),
+        new FraserSpiralStyle(),
+        new ZoellnerStyle(),
+        new OuchiStyle(),
+        new KanizsaStyle(),
+        new ImpossibleFiguresStyle()
     ];
 
     public static ArtStyle? Find(string id) => All.FirstOrDefault(s => string.Equals(s.Id, id, StringComparison.OrdinalIgnoreCase));

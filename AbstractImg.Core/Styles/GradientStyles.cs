@@ -61,8 +61,6 @@ public sealed class AuroraStyle : ArtStyle
                 float4 tint = pal(fract(fi * 0.27 + p.x / aspect * 0.35 + 0.5));
                 col += tint.rgb * glow * streak * (0.35 + 0.65 * edge) * 0.55;
             }
-            float star = step(0.9975, hash21(floor(c / 2.0))) * smoothstep(0.1, -0.3, p.y);
-            col += float3(star) * 0.8;
             return half4(clamp(col, 0.0, 1.0), 1.0);
         }
         """;
@@ -84,6 +82,8 @@ public sealed class AuroraStyle : ArtStyle
             builder.Uniforms["sky"] = new[] { sky.Red / 255f, sky.Green / 255f, sky.Blue / 255f, 1f };
             Shaders.Fill(small, builder);
         });
+        // Stars only in the upper sky, fading out towards the curtains.
+        Starfield.Draw(ctx, ctx.R(60, 140), y => Math.Clamp(1f - y / 0.55f, 0f, 1f));
     }
 }
 
@@ -274,11 +274,6 @@ public sealed class NebulaStyle : ArtStyle
             float3 col = mix(space.rgb, gas, cloud);
             col += gas * pow(cloud, 3.0) * 0.6;
             col = mix(col, col * 0.4, smoothstep(0.55, 0.85, r.x) * 0.5);
-            float2 cell = floor(c / 3.0);
-            float h = hash21(cell);
-            float star = step(0.996, h) * (0.5 + 0.5 * hash21(cell + 17.0));
-            float bright = step(0.9997, h);
-            col += float3(star + bright) * (1.0 - cloud * 0.6);
             return half4(clamp(col, 0.0, 1.0), 1.0);
         }
         """;
@@ -299,5 +294,6 @@ public sealed class NebulaStyle : ArtStyle
             builder.Uniforms["space"] = new[] { space.Red / 255f, space.Green / 255f, space.Blue / 255f, 1f };
             Shaders.Fill(small, builder);
         });
+        Starfield.Draw(ctx, ctx.R(90, 220) * (0.6f + ctx.Detail * 0.6f));
     }
 }

@@ -9,7 +9,8 @@ public enum StyleCategory
     Geometric,
     Organic,
     Procedural,
-    Retro
+    Retro,
+    Illusions
 }
 
 /// <summary>

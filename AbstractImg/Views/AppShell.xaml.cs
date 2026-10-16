@@ -20,6 +20,7 @@ namespace AbstractImg.Views
         private MainWindow? _window;
         private bool _settingsAccepted;
         private ArtStyle? _previewStyle;
+        private SlideOverride? _previewSlide;
         private CancellationTokenSource? _previewCts;
 
         public AppShell()
@@ -37,16 +38,6 @@ namespace AbstractImg.Views
         public void Initialize(MainWindow window)
         {
             _window = window;
-            SettingsDialogFrame.BorderBrush = WindowsAccent.Brush;
-            PreviewDialogFrame.BorderBrush = WindowsAccent.Brush;
-            SettingsPage.Initialize(this);
-            SettingsPage.SetDialogMode();
-            SettingsDialog.RegisterPropertyChangedCallback(DaisyModal.IsOpenProperty, (_, _) => OnSettingsDialogOpenChanged());
-            PreviewDialog.RegisterPropertyChangedCallback(DaisyModal.IsOpenProperty, (_, _) =>
-            {
-                if (!PreviewDialog.IsOpen)
-                    _previewCts?.Cancel();
-            });
             RootGrid.SizeChanged += (_, _) => UpdateDialogSizes();
             Generator.Initialize(this);
 
@@ -57,12 +48,12 @@ namespace AbstractImg.Views
             }));
             KeyboardAccelerators.Add(CreateAccelerator(VirtualKey.Enter, VirtualKeyModifiers.Control, (_, a) =>
             {
-                Generator.StartRun();
+                Generator.StartFromButton();
                 a.Handled = true;
             }));
             KeyboardAccelerators.Add(CreateAccelerator(VirtualKey.Escape, VirtualKeyModifiers.None, (_, a) =>
             {
-                if (Generator.IsRunning && !SettingsDialog.IsOpen && !PreviewDialog.IsOpen)
+                if (Generator.IsRunning && SettingsDialog?.IsOpen != true && PreviewDialog?.IsOpen != true)
                 {
                     Generator.CancelRun();
                     a.Handled = true;
@@ -88,8 +79,13 @@ namespace AbstractImg.Views
         private void UpdateLocalizedChrome()
         {
             Tip(SettingsButton, $"{L("Settings_Title")} (Ctrl+,)");
-            Tip(SettingsCloseButton, L("App_Close"));
-            Tip(PreviewCloseButton, L("App_Close"));
+            // The dialogs exist only after their first use (x:Load).
+            if (SettingsCloseButton != null)
+                Tip(SettingsCloseButton, L("App_Close"));
+            if (PreviewCloseButton != null)
+                Tip(PreviewCloseButton, L("App_Close"));
+            if (PreviewFullScreenButton != null)
+                Tip(PreviewFullScreenButton, L("Preview_FullScreen"));
             if (_previewStyle != null)
             {
                 PreviewDescription.Text = L($"Style_{_previewStyle.Id}");
@@ -100,8 +96,13 @@ namespace AbstractImg.Views
         private void UpdateDialogSizes()
         {
             var f = SizeFactor;
-            SettingsDialogContent.Width = Math.Max(320, Math.Min(820 * f, RootGrid.ActualWidth - 96));
-            SettingsDialogContent.Height = Math.Max(320, Math.Min(780, RootGrid.ActualHeight - 120));
+            if (SettingsDialogContent != null)
+            {
+                SettingsDialogContent.Width = Math.Max(320, Math.Min(820 * f, RootGrid.ActualWidth - 96));
+                SettingsDialogContent.Height = Math.Max(320, Math.Min(780, RootGrid.ActualHeight - 120));
+            }
+            if (PreviewDialogContent == null)
+                return;
             var previewWidth = Math.Max(320, Math.Min(1100, RootGrid.ActualWidth - 120));
             var imageHeight = Math.Min(previewWidth * 10 / 16, RootGrid.ActualHeight - 300);
             PreviewDialogContent.Width = previewWidth;
@@ -112,8 +113,37 @@ namespace AbstractImg.Views
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e) => OpenSettings();
 
+        /// <summary>Creates the settings dialog on first use.</summary>
+        private void EnsureSettingsDialog()
+        {
+            if (SettingsDialog != null)
+                return;
+            FindName(nameof(SettingsDialog));
+            SettingsDialogFrame.BorderBrush = WindowsAccent.Brush;
+            SettingsPage.Initialize(this);
+            SettingsPage.SetDialogMode();
+            SettingsDialog!.RegisterPropertyChangedCallback(DaisyModal.IsOpenProperty, (_, _) => OnSettingsDialogOpenChanged());
+            UpdateLocalizedChrome();
+        }
+
+        /// <summary>Creates the style preview dialog on first use.</summary>
+        private void EnsurePreviewDialog()
+        {
+            if (PreviewDialog != null)
+                return;
+            FindName(nameof(PreviewDialog));
+            PreviewDialogFrame.BorderBrush = WindowsAccent.Brush;
+            PreviewDialog!.RegisterPropertyChangedCallback(DaisyModal.IsOpenProperty, (_, _) =>
+            {
+                if (!PreviewDialog.IsOpen)
+                    _previewCts?.Cancel();
+            });
+            UpdateLocalizedChrome();
+        }
+
         public void OpenSettings()
         {
+            EnsureSettingsDialog();
             if (SettingsDialog.IsOpen)
                 return;
             _settingsAccepted = false;
@@ -157,6 +187,7 @@ namespace AbstractImg.Views
 
         public void ShowStylePreview(ArtStyle style)
         {
+            EnsurePreviewDialog();
             _previewStyle = style;
             PreviewTitle.Text = style.Name;
             UpdateLocalizedChrome();
@@ -168,6 +199,22 @@ namespace AbstractImg.Views
         private void PreviewShuffle_Click(object sender, RoutedEventArgs e) => _ = RenderPreviewAsync();
 
         private void PreviewClose_Click(object sender, RoutedEventArgs e) => PreviewDialog.IsOpen = false;
+
+        /// <summary>
+        /// Full screen view of the previewed style: starts paused with the image shown in the dialog (at screen
+        /// resolution); → shows further variants, Space runs it as a slideshow of this style, Esc closes it.
+        /// </summary>
+        private void PreviewFullScreen_Click(object sender, RoutedEventArgs e)
+        {
+            if (_previewStyle is not { } style)
+                return;
+            var settings = AppSettings.Generator.Clone();
+            settings.Styles = [style.Id];
+            var window = new SlideshowWindow(settings, Random.Shared.Next().ToString(CultureInfo.InvariantCulture),
+                TimeSpan.FromSeconds(AppSettings.SlideshowSeconds), fullScreen: true, AppSettings.SlideshowCrossfade,
+                AppSettings.SlideshowShowInfo, startPaused: true, first: _previewSlide is { } slide && slide.Style == style ? slide : null);
+            window.Activate();
+        }
 
         private async Task RenderPreviewAsync()
         {
@@ -186,7 +233,7 @@ namespace AbstractImg.Views
             var seed = Random.Shared.Next();
             try
             {
-                var (bytes, info) = await Task.Run(() =>
+                var (bytes, info, slide) = await Task.Run(() =>
                 {
                     var rng = new Random(seed);
                     var families = settings.Palettes.Count > 0 ? settings.Palettes : [PaletteFamily.Curated];
@@ -200,7 +247,7 @@ namespace AbstractImg.Views
                     using (image)
                     {
                         var info = $"{palette.Name} · {L($"Palette_{family}")} · {L($"Tone_{tone}")} · {L($"Detail_{detail}")} · {AppLocalization.Format("Preview_Seed", (uint)imageSeed)}";
-                        return (ImageEncoder.Encode(image, OutputFormat.Jpeg, 92, null), info);
+                        return (ImageEncoder.Encode(image, OutputFormat.Jpeg, 92, null), info, new SlideOverride(style, imageSeed, family, tone, detail));
                     }
                 }, cts.Token);
                 if (cts.IsCancellationRequested)
@@ -209,6 +256,7 @@ namespace AbstractImg.Views
                 PreviewDialogImage.Opacity = 1;
                 PreviewInfo.Text = info;
                 ToolTipService.SetToolTip(PreviewInfo, info);
+                _previewSlide = slide;
             }
             catch (OperationCanceledException)
             {

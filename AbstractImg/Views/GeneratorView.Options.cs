@@ -20,14 +20,53 @@ namespace AbstractImg.Views
         private TextBlock? _nameError;
         private StackPanel? _nameExamples;
 
-        private void BuildSections()
+        /// <summary>
+        /// The page is built in small steps, one per frame, so the window appears immediately and fills in:
+        /// side panel first, then the styles one category at a time, then the other sections.
+        /// </summary>
+        private IEnumerable<Action> BuildSteps()
         {
-            Sections.Children.Clear();
-            Sections.Children.Add(BuildStylesSection());
-            Sections.Children.Add(BuildColorsSection());
-            Sections.Children.Add(BuildDimensionsSection());
-            Sections.Children.Add(BuildOutputSection());
-            RefreshPreviews();
+            yield return () =>
+            {
+                InitializeRunPanel();
+                InitializeSideTabs();
+            };
+            yield return () => ReplacePlaceholder(BuildStylesSection());
+            foreach (var group in StyleCatalog.All.GroupBy(s => s.Category))
+                yield return () => AddStyleCategory(group);
+            yield return () => ReplacePlaceholder(BuildColorsSection());
+            yield return () => ReplacePlaceholder(BuildDimensionsSection());
+            yield return () => ReplacePlaceholder(BuildOutputSection());
+        }
+
+        private const string PlaceholderTag = "placeholder";
+
+        /// <summary>Skeleton blocks shown where the sections will appear.</summary>
+        private void AddPlaceholders()
+        {
+            foreach (var height in new[] { 520.0, 300.0, 360.0, 420.0 })
+            {
+                Sections.Children.Add(new Border
+                {
+                    Tag = PlaceholderTag,
+                    Height = height,
+                    CornerRadius = new CornerRadius(12),
+                    Child = new DaisySkeleton { HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch }
+                });
+            }
+        }
+
+        private void ReplacePlaceholder(UIElement section)
+        {
+            for (var i = 0; i < Sections.Children.Count; i++)
+            {
+                if (Sections.Children[i] is FrameworkElement { Tag: PlaceholderTag })
+                {
+                    Sections.Children[i] = section;
+                    return;
+                }
+            }
+            Sections.Children.Add(section);
         }
 
         #region Building blocks

@@ -107,26 +107,43 @@ public static class SizeCatalog
                && edge is >= MinEdge and <= MaxEdge;
     }
 
-    /// <summary>Short ratio label for file names, e.g. "16x9" or "1.85x1".</summary>
+    /// <summary>
+    /// Short ratio label for file names, e.g. "16x9", "6x13" or "2.39x1": the exact reduced fraction when small,
+    /// otherwise the closest simple fraction (terms up to 32, within 0.5 %), otherwise a decimal.
+    /// </summary>
     public static string RatioLabel(int width, int height)
     {
         var g = Gcd(width, height);
         var w = width / g;
         var h = height / g;
-        if (w <= 64 && h <= 64)
+        if (w <= 32 && h <= 32)
             return $"{w}x{h}";
-        // Snap to a known ratio when close.
-        foreach (var ratio in AspectRatios)
+
+        var target = width / (double)height;
+        (int W, int H, double Error) best = (0, 0, double.MaxValue);
+        for (var dh = 1; dh <= 32; dh++)
         {
-            TryParseRatio(ratio, out var rw, out var rh);
-            if (Math.Abs(width / (double)height - rw / rh) < 0.01)
-                return $"{rw.ToString(CultureInfo.InvariantCulture)}x{rh.ToString(CultureInfo.InvariantCulture)}";
-            if (Math.Abs(width / (double)height - rh / rw) < 0.01)
-                return $"{rh.ToString(CultureInfo.InvariantCulture)}x{rw.ToString(CultureInfo.InvariantCulture)}";
+            var dw = (int)Math.Round(target * dh);
+            if (dw < 1 || dw > 32)
+                continue;
+            var error = Math.Abs(dw / (double)dh - target) / target;
+            // Strictly smaller error keeps the smallest terms (16x9 rather than 32x18).
+            if (error < best.Error - 1e-12)
+                best = (dw, dh, error);
         }
+        if (best.Error < 0.005)
+            return $"{best.W}x{best.H}";
+
         return width >= height
-            ? $"{(width / (double)height).ToString("0.##", CultureInfo.InvariantCulture)}x1"
-            : $"1x{(height / (double)width).ToString("0.##", CultureInfo.InvariantCulture)}";
+            ? $"{target.ToString("0.##", CultureInfo.InvariantCulture)}x1"
+            : $"1x{(1 / target).ToString("0.##", CultureInfo.InvariantCulture)}";
+    }
+
+    /// <summary>Label of a ratio as entered (e.g. "7:5" → "7x5", portrait "5x7"), independent of pixel rounding.</summary>
+    private static string RatioLabel(double longSide, double shortSide, bool portrait)
+    {
+        static string F(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+        return portrait ? $"{F(shortSide)}x{F(longSide)}" : $"{F(longSide)}x{F(shortSide)}";
     }
 
     private static int Gcd(int a, int b) => b == 0 ? a : Gcd(b, a % b);
@@ -153,15 +170,15 @@ public static class SizeCatalog
                 var shortEdge = Math.Max(MinEdge, (int)Math.Round(edge * rh / rw));
                 if (square)
                 {
-                    Add(edge, edge);
+                    Add(edge, edge, "1x1");
                     continue;
                 }
                 foreach (var orientation in orientationList)
                 {
                     if (orientation == ImageOrientation.Landscape)
-                        Add(edge, shortEdge);
+                        Add(edge, shortEdge, RatioLabel(rw, rh, portrait: false));
                     else
-                        Add(shortEdge, edge);
+                        Add(shortEdge, edge, RatioLabel(rw, rh, portrait: true));
                 }
             }
         }
@@ -169,15 +186,15 @@ public static class SizeCatalog
         foreach (var text in fixedSizes.Distinct())
         {
             if (TryParseSize(text, out var w, out var h))
-                Add(w, h);
+                Add(w, h, RatioLabel(w, h));
         }
 
         return result;
 
-        void Add(int w, int h)
+        void Add(int w, int h, string ratio)
         {
             if (seen.Add((w, h)))
-                result.Add(new SizeChoice(w, h, RatioLabel(w, h)));
+                result.Add(new SizeChoice(w, h, ratio));
         }
     }
 }

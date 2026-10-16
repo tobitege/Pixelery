@@ -55,8 +55,8 @@
                           VerticalPosition="Bottom"
                           ToastOffset="16,16,16,32" />
 
-        <!-- Settings: cancellable modal dialog. -->
-        <daisy:DaisyModal x:Name="SettingsDialog" Grid.RowSpan="2" IsOpen="False">
+        <!-- Settings: cancellable modal dialog, created on first use (x:Load) to keep startup fast. -->
+        <daisy:DaisyModal x:Name="SettingsDialog" Grid.RowSpan="2" IsOpen="False" x:Load="False">
             <!-- Accent frame at the dialog edge: DaisyModal pads its content by 24 and rounds its corners by 16;
                  the negative margin puts this border exactly on the dialog outline. -->
             <Border x:Name="SettingsDialogFrame" Margin="-24" Padding="24" CornerRadius="16" BorderThickness="1">
@@ -89,8 +89,8 @@
             </Border>
         </daisy:DaisyModal>
 
-        <!-- Large preview of one style -->
-        <daisy:DaisyModal x:Name="PreviewDialog" Grid.RowSpan="2" IsOpen="False">
+        <!-- Large preview of one style, created on first use -->
+        <daisy:DaisyModal x:Name="PreviewDialog" Grid.RowSpan="2" IsOpen="False" x:Load="False">
             <Border x:Name="PreviewDialogFrame" Margin="-24" Padding="24" CornerRadius="16" BorderThickness="1">
                 <Grid x:Name="PreviewDialogContent" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="12">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
@@ -126,15 +126,21 @@
                                TextWrapping="Wrap"
                                Foreground="{ThemeResource DaisyBaseContentBrush}"
                                daisy:FlowerySizeManager.ResponsiveFont="Primary" />
-                    <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                         <TextBlock x:Name="PreviewInfo"
                                    Opacity="0.6"
                                    VerticalAlignment="Center"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{ThemeResource DaisyBaseContentBrush}"
                                    daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
-                        <daisy:DaisyButton x:Name="PreviewShuffleButton"
+                        <daisy:DaisyButton x:Name="PreviewFullScreenButton"
                                            Grid.Column="1"
+                                           Variant="Primary"
+                                           Shape="Square"
+                                           IconData="{StaticResource AppIconFullScreen}"
+                                           Click="PreviewFullScreen_Click" />
+                        <daisy:DaisyButton x:Name="PreviewShuffleButton"
+                                           Grid.Column="2"
                                            Variant="Primary"
                                            IconData="{StaticResource AppIconShuffle}"
                                            Content="{Binding [Preview_Another]}"
