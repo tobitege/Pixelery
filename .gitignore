@@ -207,6 +207,8 @@ coc-settings.json
 # .cursor/
 **/dist/
 **/output/
+# Source folder of the image encoder (Windows matches **/output/ case-insensitively)
+!Pixelery.Core/Output/
 
 /!devnotes
 /!flowery
