@@ -1,0 +1,211 @@
+name: AbstractImg Release
+
+# MANUAL TRIGGER ONLY - Creates a GitHub release with the self-contained AbstractImg.exe
+# Go to Actions → AbstractImg Release → Run workflow → Enter version (e.g., 0.1.0)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.0) - without "v" prefix'
+        required: true
+        type: string
+      sdk_version:
+        description: '.NET SDK used for the native Windows build'
+        required: true
+        type: choice
+        options:
+          - '10.0.402'
+          - '11.0.100-rc.2.26504.105'
+        default: '10.0.402'
+      skip_tag:
+        description: 'Skip tag creation (assumes you already pushed the tag manually)'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.validate.outputs.version }}
+      tag: ${{ steps.validate.outputs.tag }}
+    steps:
+      - name: Validate version format
+        id: validate
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format. Use semantic versioning (e.g., 0.1.0)"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "✅ Version: $VERSION, Tag: v$VERSION"
+
+  build-app:
+    needs: validate
+    runs-on: windows-2025-vs2026
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: |
+            10.0.402
+            ${{ inputs.sdk_version }}
+
+      - name: Build solution
+        run: dotnet build AbstractImg.slnx -c Release -p:Platform=x64 -nologo
+
+      - name: Publish AbstractImg (single self-contained exe)
+        run: |
+          $version = '${{ needs.validate.outputs.version }}'
+          # Single file, self-contained and compression are configured in AbstractImg.csproj.
+          dotnet publish AbstractImg/AbstractImg.csproj `
+            -c Release `
+            -r win-x64 `
+            -p:Platform=x64 `
+            -p:WindowsPackageType=None `
+            -p:Version=$version `
+            -p:AssemblyVersion="$version.0" `
+            -p:FileVersion="$version.0" `
+            -o publish `
+            -nologo
+          if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
+
+      - name: Collect release asset
+        run: |
+          $files = Get-ChildItem ./publish -File
+          $files | Format-Table Name, Length
+          if (-not (Test-Path ./publish/AbstractImg.exe)) { throw 'AbstractImg.exe missing in publish output.' }
+          if ($files.Count -ne 1) { throw "Expected a single file in publish output, found $($files.Count)." }
+          New-Item -ItemType Directory -Force ./final | Out-Null
+          Copy-Item ./publish/AbstractImg.exe ./final/AbstractImg-Windows-x64.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: AbstractImg-Windows-x64
+          path: ./final/AbstractImg-Windows-x64.exe
+          if-no-files-found: error
+
+  publish:
+    needs: [validate, build-app]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: ./release-artifacts
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p ./final
+          find ./release-artifacts -name "*.exe" -exec cp {} ./final/ \;
+          echo "=== Release artifacts ==="
+          ls -la ./final/
+
+      - name: Extract changelog
+        id: changelog
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          CHANGELOG=""
+          if [ -f CHANGELOG.md ]; then
+            # Extract the section for this version from CHANGELOG.md
+            CHANGELOG=$(awk -v ver="$VERSION" '
+              /^## \[/ {
+                if (found) exit
+                if ($0 ~ "\\[" ver "\\]") found=1
+              }
+              found && !/^## \[/ { print }
+            ' CHANGELOG.md)
+          fi
+
+          if [ -z "$CHANGELOG" ]; then
+            echo "⚠️ No changelog entry found for version $VERSION"
+            CHANGELOG="No changelog entry for this version."
+          fi
+
+          echo "$CHANGELOG" > changelog_section.md
+          echo "✅ Extracted changelog for v$VERSION"
+
+      - name: Create and push tag
+        if: ${{ inputs.skip_tag != true }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ needs.validate.outputs.tag }}
+          git push origin ${{ needs.validate.outputs.tag }}
+          echo "✅ Created tag: ${{ needs.validate.outputs.tag }}"
+
+      - name: Skip tag creation
+        if: ${{ inputs.skip_tag == true }}
+        run: echo "⏭️ Skipping tag creation (tag already exists)"
+
+      - name: Build release notes
+        run: |
+          cat > release_notes.md << 'HEADER'
+          ## 📋 What's Changed
+          HEADER
+          cat changelog_section.md >> release_notes.md
+          cat >> release_notes.md << 'APP'
+
+          ---
+
+          ## 🎨 Download
+
+          Single self-contained executable (no .NET or Windows App SDK install required). Just download and run.
+
+          | Platform | Download |
+          |----------|----------|
+          | Windows x64 | `AbstractImg-Windows-x64.exe` |
+          APP
+
+          echo "=== Release Notes ==="
+          cat release_notes.md
+
+      - name: Load custom release notes
+        id: release_body
+        run: |
+          {
+            echo 'body<<EOF'
+            cat release_notes.md
+            echo ''
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ needs.validate.outputs.tag }}
+          name: "v${{ needs.validate.outputs.version }}"
+          files: ./final/*
+          generate_release_notes: true
+          body: ${{ steps.release_body.outputs.body }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## 🎉 Release Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ needs.validate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** ${{ needs.validate.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release:** ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ needs.validate.outputs.tag }}" >> $GITHUB_STEP_SUMMARY

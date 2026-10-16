@@ -1,0 +1,193 @@
+<UserControl
+    x:Class="AbstractImg.Views.GeneratorView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:daisy="using:Flowery.Controls">
+
+    <Grid x:Name="RootGrid" ColumnDefinitions="*,Auto" DataContext="{x:Bind Localization, Mode=OneWay}">
+
+        <!-- Configuration -->
+        <ScrollViewer x:Name="ConfigScroller"
+                      HorizontalScrollMode="Disabled"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="ConfigStack" Padding="28,20,28,32" Spacing="20">
+
+                <!-- Hero: title, short explanation and a freshly generated artwork as backdrop -->
+                <Grid x:Name="Hero"
+                      CornerRadius="16"
+                      BorderThickness="1"
+                      MinHeight="176"
+                      Background="{ThemeResource DaisyBase200Brush}"
+                      BorderBrush="{ThemeResource DaisyBase300Brush}">
+                    <Image x:Name="HeroImage"
+                           Stretch="UniformToFill"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Stretch"
+                           Opacity="0" />
+                    <Rectangle x:Name="HeroFade" IsHitTestVisible="False" />
+                    <Grid ColumnDefinitions="*,Auto" Padding="32,26">
+                        <StackPanel VerticalAlignment="Center" Spacing="6" MaxWidth="600" HorizontalAlignment="Left">
+                            <TextBlock x:Name="HeroTitle"
+                                       Text="{Binding [Hero_Title]}"
+                                       Style="{StaticResource AppPageTitleTextStyle}"
+                                       TextTrimming="None"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding [Hero_Text]}"
+                                       Opacity="0.8"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ThemeResource DaisyBaseContentBrush}"
+                                       daisy:FlowerySizeManager.ResponsiveFont="Primary" />
+                            <StackPanel x:Name="HeroBadges" Orientation="Horizontal" Spacing="8" Margin="0,10,0,0" />
+                        </StackPanel>
+                        <daisy:DaisyButton x:Name="HeroShuffleButton"
+                                           Grid.Column="1"
+                                           VerticalAlignment="Bottom"
+                                           Variant="Primary"
+                                           Shape="Circle"
+                                           Size="Small"
+                                           IconData="{StaticResource AppIconShuffle}"
+                                           Click="HeroShuffleButton_Click" />
+                    </Grid>
+                </Grid>
+
+                <!-- Sections are built in code (styles, colors, dimensions, output). -->
+                <StackPanel x:Name="Sections" Spacing="20" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Run panel -->
+        <Border x:Name="RunPanel"
+                Grid.Column="1"
+                Width="{StaticResource AppRunPanelWidth}"
+                Background="{ThemeResource DaisyBase200Brush}"
+                BorderBrush="{ThemeResource DaisyBase300Brush}"
+                BorderThickness="1,0,0,0">
+            <ScrollViewer HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="RunStack" Padding="20,20,20,24" Spacing="16">
+                    <TextBlock Text="{Binding [Run_Title]}"
+                               Style="{StaticResource AppSectionHeaderStyle}"
+                               daisy:FlowerySizeManager.ResponsiveFont="SectionHeader" />
+
+                    <StackPanel x:Name="SetupPanel" Spacing="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="{Binding [Run_Count]}" Style="{StaticResource AppCaptionTextStyle}" daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
+                            <daisy:DaisyNumericUpDown x:Name="CountInput"
+                                                      ShowThousandSeparators="True"
+                                                      HorizontalAlignment="Stretch" />
+                            <StackPanel x:Name="CountPresets" Orientation="Horizontal" Spacing="6" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="{Binding [Run_Threads]}" Style="{StaticResource AppCaptionTextStyle}" daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
+                            <daisy:DaisyNumericUpDown x:Name="ThreadsInput"
+                                                      HorizontalAlignment="Stretch" />
+                            <TextBlock x:Name="ThreadsHint"
+                                       Opacity="0.6"
+                                       TextWrapping="Wrap"
+                                       Foreground="{ThemeResource DaisyBaseContentBrush}"
+                                       daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="{Binding [Run_Seed]}" Style="{StaticResource AppCaptionTextStyle}" daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                <daisy:DaisyInput x:Name="SeedInput"
+                                                  Variant="Bordered"
+                                                  PlaceholderText="{Binding [Run_SeedPlaceholder]}" />
+                                <daisy:DaisyButton x:Name="SeedDiceButton"
+                                                   Grid.Column="1"
+                                                   Variant="Ghost"
+                                                   Shape="Square"
+                                                   IconData="{StaticResource AppIconDice}"
+                                                   Click="SeedDiceButton_Click" />
+                            </Grid>
+                        </StackPanel>
+
+                        <Border CornerRadius="10" Padding="14,12" Background="{ThemeResource DaisyBase100Brush}">
+                            <StackPanel x:Name="SummaryPanel" Spacing="6" />
+                        </Border>
+
+                        <StackPanel x:Name="ValidationPanel" Spacing="6" />
+                    </StackPanel>
+
+                    <daisy:DaisyButton x:Name="GenerateButton"
+                                       Variant="Primary"
+                                       Size="Large"
+                                       HorizontalAlignment="Stretch"
+                                       IconData="{StaticResource AppIconPlay}"
+                                       Content="{Binding [Run_Start]}"
+                                       Click="GenerateButton_Click" />
+
+                    <!-- Progress, shown while and after a run -->
+                    <StackPanel x:Name="ProgressPanel" Spacing="12" Visibility="Collapsed">
+                        <Border x:Name="PreviewFrame"
+                                CornerRadius="10"
+                                Height="200"
+                                BorderThickness="1"
+                                Background="{ThemeResource DaisyBase300Brush}"
+                                BorderBrush="{ThemeResource DaisyBase300Brush}">
+                            <Grid>
+                                <daisy:DaisyLoading x:Name="PreviewLoading"
+                                                    Variant="Dots"
+                                                    Size="Small"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center" />
+                                <TextBlock x:Name="PreviewOffText"
+                                           Visibility="Collapsed"
+                                           Opacity="0.6"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Margin="16"
+                                           Text="{Binding [Run_PreviewOff]}"
+                                           Foreground="{ThemeResource DaisyBaseContentBrush}"
+                                           daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
+                                <Image x:Name="PreviewImage" Stretch="Uniform" />
+                            </Grid>
+                        </Border>
+                        <TextBlock x:Name="PreviewCaption"
+                                   Opacity="0.65"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{ThemeResource DaisyBaseContentBrush}"
+                                   daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
+
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBlock x:Name="ProgressCount"
+                                       FontSize="26"
+                                       FontWeight="Bold"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{ThemeResource DaisyBaseContentBrush}" />
+                            <TextBlock x:Name="ProgressPercent"
+                                       Grid.Column="1"
+                                       Opacity="0.7"
+                                       VerticalAlignment="Bottom"
+                                       Margin="0,0,0,4"
+                                       Foreground="{ThemeResource DaisyBaseContentBrush}"
+                                       daisy:FlowerySizeManager.ResponsiveFont="Primary" />
+                        </Grid>
+                        <daisy:DaisyProgress x:Name="ProgressBar" Variant="Primary" Minimum="0" Maximum="100" />
+
+                        <Grid x:Name="StatsGrid" ColumnDefinitions="*,*" ColumnSpacing="12" RowSpacing="10" />
+
+                        <daisy:DaisyAlert x:Name="ResultAlert" Visibility="Collapsed" />
+
+                        <daisy:DaisyButton x:Name="CancelButton"
+                                           Variant="Error"
+                                           HorizontalAlignment="Stretch"
+                                           IconData="{StaticResource AppIconStop}"
+                                           Content="{Binding [Run_Cancel]}"
+                                           Click="CancelButton_Click" />
+                        <daisy:DaisyButton x:Name="OpenFolderButton"
+                                           Variant="Primary"
+                                           HorizontalAlignment="Stretch"
+                                           IconSymbol="OpenLocal"
+                                           Visibility="Collapsed"
+                                           Content="{Binding [Run_OpenFolder]}"
+                                           Click="OpenFolderButton_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

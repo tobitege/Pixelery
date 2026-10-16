@@ -1,0 +1,147 @@
+<UserControl
+    x:Class="AbstractImg.Views.AppShell"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:daisy="using:Flowery.Controls"
+    xmlns:views="using:AbstractImg.Views">
+
+    <Grid x:Name="RootGrid"
+          RowDefinitions="Auto,*"
+          DataContext="{x:Bind Localization, Mode=OneWay}"
+          daisy:DaisyBaseContentControl.NeumorphicScopeEnabled="False">
+
+        <TitleBar x:Name="AppTitleBar"
+                  Title="{Binding [App_Title]}"
+                  IsBackButtonVisible="False">
+            <TitleBar.IconSource>
+                <ImageIconSource>
+                    <ImageIconSource.ImageSource>
+                        <SvgImageSource UriSource="ms-appx:///Assets/app_icon.svg"
+                                        RasterizePixelWidth="32"
+                                        RasterizePixelHeight="32" />
+                    </ImageIconSource.ImageSource>
+                </ImageIconSource>
+            </TitleBar.IconSource>
+            <TitleBar.RightHeader>
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,8,0" VerticalAlignment="Center">
+                    <daisy:DaisyLoading x:Name="RunIndicator"
+                                        Size="ExtraSmall"
+                                        Variant="Spinner"
+                                        Visibility="Collapsed"
+                                        VerticalAlignment="Center" />
+                    <daisy:DaisyButton x:Name="SettingsButton"
+                                       Variant="Ghost"
+                                       Shape="Square"
+                                       Size="Small"
+                                       VerticalAlignment="Center"
+                                       IconData="{StaticResource DaisyIconSettings}"
+                                       daisy:FlowerySizeManager.IgnoreGlobalSize="True"
+                                       Click="SettingsButton_Click" />
+                </StackPanel>
+            </TitleBar.RightHeader>
+        </TitleBar>
+
+        <Border x:Name="PageSurface"
+                Grid.Row="1"
+                Background="{ThemeResource DaisyBase100Brush}"
+                BorderBrush="{ThemeResource DaisyBase300Brush}"
+                BorderThickness="0,1,0,0">
+            <views:GeneratorView x:Name="Generator" />
+        </Border>
+
+        <daisy:DaisyToast x:Name="Toasts"
+                          Grid.RowSpan="2"
+                          HorizontalPosition="Center"
+                          VerticalPosition="Bottom"
+                          ToastOffset="16,16,16,32" />
+
+        <!-- Settings: cancellable modal dialog. -->
+        <daisy:DaisyModal x:Name="SettingsDialog" Grid.RowSpan="2" IsOpen="False">
+            <!-- Accent frame at the dialog edge: DaisyModal pads its content by 24 and rounds its corners by 16;
+                 the negative margin puts this border exactly on the dialog outline. -->
+            <Border x:Name="SettingsDialogFrame" Margin="-24" Padding="24" CornerRadius="16" BorderThickness="1">
+                <Grid x:Name="SettingsDialogContent" RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{Binding [Settings_Title]}"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   daisy:FlowerySizeManager.ResponsiveFont="Header" />
+                        <daisy:DaisyButton x:Name="SettingsCloseButton"
+                                           Grid.Column="1"
+                                           Variant="Ghost"
+                                           Shape="Circle"
+                                           IconSymbol="Cancel"
+                                           Click="SettingsCancel_Click" />
+                    </Grid>
+                    <views:SettingsView x:Name="SettingsPage" Grid.Row="1" />
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <daisy:DaisyButton x:Name="SettingsCancelButton"
+                                           Variant="Neutral"
+                                           Content="{Binding [App_Cancel]}"
+                                           Click="SettingsCancel_Click" />
+                        <daisy:DaisyButton x:Name="SettingsOkButton"
+                                           Variant="Primary"
+                                           MinWidth="96"
+                                           Content="{Binding [App_Ok]}"
+                                           Click="SettingsOk_Click" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </daisy:DaisyModal>
+
+        <!-- Large preview of one style -->
+        <daisy:DaisyModal x:Name="PreviewDialog" Grid.RowSpan="2" IsOpen="False">
+            <Border x:Name="PreviewDialogFrame" Margin="-24" Padding="24" CornerRadius="16" BorderThickness="1">
+                <Grid x:Name="PreviewDialogContent" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="12">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <TextBlock x:Name="PreviewTitle"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       daisy:FlowerySizeManager.ResponsiveFont="Header" />
+                            <daisy:DaisyBadge x:Name="PreviewCategory" Variant="Secondary" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <daisy:DaisyButton x:Name="PreviewCloseButton"
+                                           Grid.Column="1"
+                                           Variant="Ghost"
+                                           Shape="Circle"
+                                           IconSymbol="Cancel"
+                                           Click="PreviewClose_Click" />
+                    </Grid>
+                    <Border x:Name="PreviewImageFrame"
+                            Grid.Row="1"
+                            CornerRadius="12"
+                            Background="{ThemeResource DaisyBase300Brush}">
+                        <Grid>
+                            <daisy:DaisyLoading x:Name="PreviewDialogLoading"
+                                                Variant="Dots"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center" />
+                            <Image x:Name="PreviewDialogImage" Stretch="UniformToFill" />
+                        </Grid>
+                    </Border>
+                    <TextBlock x:Name="PreviewDescription"
+                               Grid.Row="2"
+                               Opacity="0.8"
+                               TextWrapping="Wrap"
+                               Foreground="{ThemeResource DaisyBaseContentBrush}"
+                               daisy:FlowerySizeManager.ResponsiveFont="Primary" />
+                    <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <TextBlock x:Name="PreviewInfo"
+                                   Opacity="0.6"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{ThemeResource DaisyBaseContentBrush}"
+                                   daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
+                        <daisy:DaisyButton x:Name="PreviewShuffleButton"
+                                           Grid.Column="1"
+                                           Variant="Primary"
+                                           IconData="{StaticResource AppIconShuffle}"
+                                           Content="{Binding [Preview_Another]}"
+                                           Click="PreviewShuffle_Click" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </daisy:DaisyModal>
+    </Grid>
+</UserControl>
