@@ -1,7 +1,7 @@
-name: AbstractImg Release
+name: Pixelery Release
 
-# MANUAL TRIGGER ONLY - Creates a GitHub release with the self-contained AbstractImg.exe
-# Go to Actions → AbstractImg Release → Run workflow → Enter version (e.g., 0.1.0)
+# MANUAL TRIGGER ONLY - Creates a GitHub release with the self-contained Pixelery.exe
+# Go to Actions → Pixelery Release → Run workflow → Enter version (e.g., 0.1.0)
 
 on:
   workflow_dispatch:
@@ -67,13 +67,13 @@ jobs:
             ${{ inputs.sdk_version }}
 
       - name: Build solution
-        run: dotnet build AbstractImg.slnx -c Release -p:Platform=x64 -nologo
+        run: dotnet build Pixelery.slnx -c Release -p:Platform=x64 -nologo
 
-      - name: Publish AbstractImg (single self-contained exe)
+      - name: Publish Pixelery (single self-contained exe)
         run: |
           $version = '${{ needs.validate.outputs.version }}'
-          # Single file, self-contained and compression are configured in AbstractImg.csproj.
-          dotnet publish AbstractImg/AbstractImg.csproj `
+          # Single file, self-contained and compression are configured in Pixelery.csproj.
+          dotnet publish Pixelery/Pixelery.csproj `
             -c Release `
             -r win-x64 `
             -p:Platform=x64 `
@@ -85,10 +85,10 @@ jobs:
             -nologo
           if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
 
-      - name: Publish abstractimg CLI (single self-contained exe)
+      - name: Publish pixelery CLI (single self-contained exe)
         run: |
           $version = '${{ needs.validate.outputs.version }}'
-          dotnet publish AbstractImg.Cli/AbstractImg.Cli.csproj `
+          dotnet publish Pixelery.Cli/Pixelery.Cli.csproj `
             -c Release `
             -r win-x64 `
             -p:Version=$version `
@@ -105,16 +105,16 @@ jobs:
             $files | Format-Table Name, Length
             if ($files.Count -ne 1) { throw "Expected a single file in $folder, found $($files.Count)." }
           }
-          if (-not (Test-Path ./publish/AbstractImg.exe)) { throw 'AbstractImg.exe missing in publish output.' }
-          if (-not (Test-Path ./publish-cli/abstractimg.exe)) { throw 'abstractimg.exe missing in CLI publish output.' }
+          if (-not (Test-Path ./publish/Pixelery.exe)) { throw 'Pixelery.exe missing in publish output.' }
+          if (-not (Test-Path ./publish-cli/pixelery.exe)) { throw 'pixelery.exe missing in CLI publish output.' }
           New-Item -ItemType Directory -Force ./final | Out-Null
-          Copy-Item ./publish/AbstractImg.exe ./final/AbstractImg-Windows-x64.exe
-          Copy-Item ./publish-cli/abstractimg.exe ./final/abstractimg-cli-Windows-x64.exe
+          Copy-Item ./publish/Pixelery.exe ./final/Pixelery-Windows-x64.exe
+          Copy-Item ./publish-cli/pixelery.exe ./final/pixelery-cli-Windows-x64.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: AbstractImg-Windows-x64
+          name: Pixelery-Windows-x64
           path: ./final/*.exe
           if-no-files-found: error
 
@@ -192,8 +192,8 @@ jobs:
 
           | Asset | Description |
           |-------|-------------|
-          | `AbstractImg-Windows-x64.exe` | App (Windows x64) |
-          | `abstractimg-cli-Windows-x64.exe` | Command line tool: generate, render, setbackground, setscreensaver (run with `--help`) |
+          | `Pixelery-Windows-x64.exe` | App (Windows x64) |
+          | `pixelery-cli-Windows-x64.exe` | Command line tool: generate, render, setbackground, setscreensaver (run with `--help`) |
           APP
 
           echo "=== Release Notes ==="

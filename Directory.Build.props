@@ -8,6 +8,10 @@
     <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">0.1.0.0</AssemblyVersion>
     <FileVersion Condition="'$(FileVersion)' == ''">0.1.0.0</FileVersion>
     <Authors Condition="'$(Authors)' == ''">tobitege</Authors>
+    <Copyright Condition="'$(Copyright)' == ''">Copyright (c) 2026 by @tobitege</Copyright>
+    <Product Condition="'$(Product)' == ''">Pixelery</Product>
+    <PackageProjectUrl Condition="'$(PackageProjectUrl)' == ''">https://github.com/tobitege/Pixelery</PackageProjectUrl>
+    <RepositoryUrl Condition="'$(RepositoryUrl)' == ''">https://github.com/tobitege/Pixelery</RepositoryUrl>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>

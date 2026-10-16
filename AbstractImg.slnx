@@ -1,5 +1,0 @@
-<Solution>
-  <Project Path="AbstractImg.Cli/AbstractImg.Cli.csproj" />
-  <Project Path="AbstractImg.Core/AbstractImg.Core.csproj" />
-  <Project Path="AbstractImg/AbstractImg.csproj" />
-</Solution>
