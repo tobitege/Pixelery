@@ -40,6 +40,22 @@
     </Content>
   </ItemGroup>
 
+  <!-- WinUI ships its control strings (Microsoft.ui.xaml.dll.mui) in 86 culture folders; keep only the app's 12 languages
+       (other cultures fall back to en-us). The self-contained Windows App SDK target adds them as None items linked to "<culture>\". -->
+  <Target Name="TrimWindowsAppSDKMuiLanguages" AfterTargets="AddMicrosoftWindowsAppSDKPayloadFilesFromComponents">
+    <PropertyGroup>
+      <_KeepMuiCultures>;en-us;de-de;fr-fr;es-es;it-it;ja-jp;ko-kr;zh-cn;ar-sa;tr-tr;uk-ua;he-il;</_KeepMuiCultures>
+    </PropertyGroup>
+    <ItemGroup>
+      <_MuiFiles Include="@(None)" Condition="'%(Extension)' == '.mui'" />
+      <_DropMui Include="@(_MuiFiles)"
+                Condition="!$(_KeepMuiCultures.Contains(';$([System.IO.Path]::GetDirectoryName('%(Link)').ToLowerInvariant());'))" />
+      <None Remove="@(_DropMui)" />
+      <_MuiFiles Remove="@(_MuiFiles)" />
+      <_DropMui Remove="@(_DropMui)" />
+    </ItemGroup>
+  </Target>
+
   <!-- Native packages ship symbol files (libSkiaSharp.pdb, ~80 MB); keep them out of the release. -->
   <Target Name="ExcludePdbFromPublish" AfterTargets="ComputeResolvedFilesToPublishList">
     <ItemGroup>
