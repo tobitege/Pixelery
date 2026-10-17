@@ -50,8 +50,9 @@ public sealed class FlowFieldStyle : ArtStyle
                 : ctx.Color();
             paint.Color = color.WithAlpha(alpha);
             paint.StrokeWidth = widthBase * ctx.R(0.4f, 1.6f);
-            using var path = new SKPath();
-            path.AddPoly(points.AsSpan(0, count).ToArray(), false);
+            using var builder = new SKPathBuilder();
+            builder.AddPoly(points.AsSpan(0, count), false);
+            using var path = builder.Detach();
             ctx.Canvas.DrawPath(path, paint);
         }
     }
@@ -189,8 +190,9 @@ public sealed class WatercolorStyle : ArtStyle
             for (var l = 0; l < layers; l++)
             {
                 var layer = Deform(ctx, shape, 4, radius * 0.22f, null);
-                using var path = new SKPath();
-                path.AddPoly([.. layer], true);
+                using var builder = new SKPathBuilder();
+                builder.AddPoly([.. layer], true);
+                using var path = builder.Detach();
                 ctx.Canvas.DrawPath(path, paint);
             }
         }
@@ -267,11 +269,12 @@ public sealed class PaperLayersStyle : ArtStyle
             var y = baseY + ctx.Noise.Fbm(i / (float)segments * freq + seed, layer * 3.7f, 2) * amp * 2;
             points.Add(new SKPoint(x, y));
         }
-        var path = SmoothOpenPath(points);
-        path.LineTo(ctx.Width + 10, ctx.Height + 10);
-        path.LineTo(-10, ctx.Height + 10);
-        path.Close();
-        return path;
+        using var curve = SmoothOpenPath(points);
+        using var builder = new SKPathBuilder(curve);
+        builder.LineTo(ctx.Width + 10, ctx.Height + 10);
+        builder.LineTo(-10, ctx.Height + 10);
+        builder.Close();
+        return builder.Detach();
     }
 
     private static SKPath Ring(RenderContext ctx, int layer, int layers, float freq)
@@ -327,12 +330,13 @@ public sealed class RidgelinesStyle : ArtStyle
                 var y = baseY - (n * n * 3 * envelope + ctx.Noise.Noise(u * 40, l) * 0.02f) * amp;
                 points[i] = new SKPoint(x, y);
             }
-            using var path = new SKPath();
-            path.AddPoly(points, false);
-            using var area = new SKPath(path);
-            area.LineTo(points[^1].X, baseY + spacing * 2);
-            area.LineTo(points[0].X, baseY + spacing * 2);
-            area.Close();
+            using var builder = new SKPathBuilder();
+            builder.AddPoly(points, false);
+            using var path = builder.Snapshot();
+            builder.LineTo(points[^1].X, baseY + spacing * 2);
+            builder.LineTo(points[0].X, baseY + spacing * 2);
+            builder.Close();
+            using var area = builder.Detach();
             ctx.Canvas.DrawPath(area, fill);
             if (colored)
                 stroke.Color = ctx.Palette.Sample(l / (float)lines);

@@ -51,45 +51,45 @@ public abstract class ArtStyle
     /// <summary>Smooth closed path through the points (Catmull-Rom converted to cubic Béziers).</summary>
     protected static SKPath SmoothClosedPath(IReadOnlyList<SKPoint> pts)
     {
-        var path = new SKPath();
         var n = pts.Count;
         if (n < 3)
-            return path;
-        path.MoveTo(pts[0]);
+            return new SKPath();
+        using var builder = new SKPathBuilder();
+        builder.MoveTo(pts[0]);
         for (var i = 0; i < n; i++)
         {
             var p0 = pts[(i - 1 + n) % n];
             var p1 = pts[i];
             var p2 = pts[(i + 1) % n];
             var p3 = pts[(i + 2) % n];
-            path.CubicTo(
+            builder.CubicTo(
                 p1.X + (p2.X - p0.X) / 6f, p1.Y + (p2.Y - p0.Y) / 6f,
                 p2.X - (p3.X - p1.X) / 6f, p2.Y - (p3.Y - p1.Y) / 6f,
                 p2.X, p2.Y);
         }
-        path.Close();
-        return path;
+        builder.Close();
+        return builder.Detach();
     }
 
     /// <summary>Smooth open path through the points.</summary>
     protected static SKPath SmoothOpenPath(IReadOnlyList<SKPoint> pts)
     {
-        var path = new SKPath();
         var n = pts.Count;
         if (n == 0)
-            return path;
-        path.MoveTo(pts[0]);
+            return new SKPath();
+        using var builder = new SKPathBuilder();
+        builder.MoveTo(pts[0]);
         for (var i = 0; i < n - 1; i++)
         {
             var p0 = pts[Math.Max(i - 1, 0)];
             var p1 = pts[i];
             var p2 = pts[i + 1];
             var p3 = pts[Math.Min(i + 2, n - 1)];
-            path.CubicTo(
+            builder.CubicTo(
                 p1.X + (p2.X - p0.X) / 6f, p1.Y + (p2.Y - p0.Y) / 6f,
                 p2.X - (p3.X - p1.X) / 6f, p2.Y - (p3.Y - p1.Y) / 6f,
                 p2.X, p2.Y);
         }
-        return path;
+        return builder.Detach();
     }
 }

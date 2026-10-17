@@ -207,8 +207,9 @@ public sealed class HarmonographStyle : ArtStyle
         {
             var count = Math.Min(segment + 1, points.Length - start);
             paint.Color = ctx.Palette.Sample(start / (float)points.Length).WithAlpha(alpha);
-            using var path = new SKPath();
-            path.AddPoly(points.AsSpan(start, count).ToArray(), false);
+            using var builder = new SKPathBuilder();
+            builder.AddPoly(points.AsSpan(start, count), false);
+            using var path = builder.Detach();
             ctx.Canvas.DrawPath(path, paint);
         }
     }

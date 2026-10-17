@@ -235,23 +235,23 @@ public sealed class BokehStyle : ArtStyle
 
     private static SKPath Shape(float x, float y, float r, bool hexagonal, float rotation)
     {
-        var path = new SKPath();
+        using var builder = new SKPathBuilder();
         if (!hexagonal)
         {
-            path.AddCircle(x, y, r);
-            return path;
+            builder.AddCircle(x, y, r);
+            return builder.Detach();
         }
         for (var k = 0; k < 6; k++)
         {
             var a = (rotation + k * 60) * MathF.PI / 180f;
             var p = new SKPoint(x + MathF.Cos(a) * r, y + MathF.Sin(a) * r);
             if (k == 0)
-                path.MoveTo(p);
+                builder.MoveTo(p);
             else
-                path.LineTo(p);
+                builder.LineTo(p);
         }
-        path.Close();
-        return path;
+        builder.Close();
+        return builder.Detach();
     }
 }
 

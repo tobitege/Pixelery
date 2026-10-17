@@ -59,11 +59,12 @@ public sealed class BauhausStyle : ArtStyle
                 break;
             case 3: // triangle across the diagonal
             {
-                using var path = new SKPath();
-                path.MoveTo(-h, -h);
-                path.LineTo(h, -h);
-                path.LineTo(-h, h);
-                path.Close();
+                using var builder = new SKPathBuilder();
+                builder.MoveTo(-h, -h);
+                builder.LineTo(h, -h);
+                builder.LineTo(-h, h);
+                builder.Close();
+                using var path = builder.Detach();
                 canvas.DrawPath(path, paint);
                 break;
             }
@@ -79,10 +80,11 @@ public sealed class BauhausStyle : ArtStyle
             {
                 canvas.Save();
                 canvas.ClipRect(new SKRect(-h, -h, h, h));
-                using var path = new SKPath();
-                path.AddCircle(-h, -h, s);
-                using var other = new SKPath();
-                other.AddCircle(h, h, s);
+                using var builder = new SKPathBuilder();
+                builder.AddCircle(-h, -h, s);
+                using var path = builder.Detach();
+                builder.AddCircle(h, h, s);
+                using var other = builder.Detach();
                 using var leaf = path.Op(other, SKPathOp.Intersect);
                 if (leaf != null)
                     canvas.DrawPath(leaf, paint);
@@ -174,13 +176,14 @@ public sealed class TruchetStyle : ArtStyle
                     default:
                     {
                         using var paint = ctx.Fill(color);
-                        using var path = new SKPath();
+                        using var builder = new SKPathBuilder();
                         var corner = ctx.Ri(0, 4);
                         SKPoint[] corners = [new(x, y), new(x + tile, y), new(x + tile, y + tile), new(x, y + tile)];
-                        path.MoveTo(corners[corner]);
-                        path.LineTo(corners[(corner + 1) % 4]);
-                        path.LineTo(corners[(corner + 3) % 4]);
-                        path.Close();
+                        builder.MoveTo(corners[corner]);
+                        builder.LineTo(corners[(corner + 1) % 4]);
+                        builder.LineTo(corners[(corner + 3) % 4]);
+                        builder.Close();
+                        using var path = builder.Detach();
                         ctx.Canvas.DrawPath(path, paint);
                         break;
                     }
@@ -251,11 +254,12 @@ public sealed class LowPolyStyle : ArtStyle
             var color = ctx.Palette.Sample(Math.Clamp(t, 0, 1));
             color = ColorMath.Lighten(color, ctx.R(-light, light));
             paint.Color = color;
-            using var path = new SKPath();
-            path.MoveTo(p1);
-            path.LineTo(p2);
-            path.LineTo(p3);
-            path.Close();
+            using var builder = new SKPathBuilder();
+            builder.MoveTo(p1);
+            builder.LineTo(p2);
+            builder.LineTo(p3);
+            builder.Close();
+            using var path = builder.Detach();
             ctx.Canvas.DrawPath(path, paint);
         }
     }
@@ -507,42 +511,45 @@ public sealed class MemphisStyle : ArtStyle
         {
             case 0: // squiggle
             {
-                using var path = new SKPath();
+                using var builder = new SKPathBuilder();
                 var waves = 3 + local.Next(3);
-                path.MoveTo(-size, 0);
+                builder.MoveTo(-size, 0);
                 for (var k = 0; k < waves; k++)
                 {
                     var x0 = -size + k * 2 * size / waves;
                     var dx = 2 * size / waves;
-                    path.CubicTo(x0 + dx * 0.25f, k % 2 == 0 ? -size * 0.4f : size * 0.4f, x0 + dx * 0.75f, k % 2 == 0 ? -size * 0.4f : size * 0.4f, x0 + dx, 0);
+                    builder.CubicTo(x0 + dx * 0.25f, k % 2 == 0 ? -size * 0.4f : size * 0.4f, x0 + dx * 0.75f, k % 2 == 0 ? -size * 0.4f : size * 0.4f, x0 + dx, 0);
                 }
+                using var path = builder.Detach();
                 using var paint = ctx.Stroke(color, lineWidth);
                 canvas.DrawPath(path, paint);
                 break;
             }
             case 1: // triangle
             {
-                using var path = new SKPath();
-                path.MoveTo(0, -size * 0.6f);
-                path.LineTo(size * 0.55f, size * 0.4f);
-                path.LineTo(-size * 0.55f, size * 0.4f);
-                path.Close();
+                using var builder = new SKPathBuilder();
+                builder.MoveTo(0, -size * 0.6f);
+                builder.LineTo(size * 0.55f, size * 0.4f);
+                builder.LineTo(-size * 0.55f, size * 0.4f);
+                builder.Close();
+                using var path = builder.Detach();
                 using var paint = local.Next(2) == 0 ? ctx.Fill(color) : ctx.Stroke(color, lineWidth * 0.7f);
                 canvas.DrawPath(path, paint);
                 break;
             }
             case 2: // zigzag
             {
-                using var path = new SKPath();
+                using var builder = new SKPathBuilder();
                 var n = 5 + local.Next(4);
                 for (var k = 0; k <= n; k++)
                 {
                     var p = new SKPoint(-size + k * 2 * size / n, k % 2 == 0 ? -size * 0.2f : size * 0.2f);
                     if (k == 0)
-                        path.MoveTo(p);
+                        builder.MoveTo(p);
                     else
-                        path.LineTo(p);
+                        builder.LineTo(p);
                 }
+                using var path = builder.Detach();
                 using var paint = ctx.Stroke(color, lineWidth * 0.8f);
                 paint.StrokeJoin = SKStrokeJoin.Miter;
                 canvas.DrawPath(path, paint);
@@ -635,8 +642,9 @@ public sealed class IsometricStyle : ArtStyle
 
         void Face(SKPoint[] pts, SKColor color)
         {
-            using var path = new SKPath();
-            path.AddPoly(pts, true);
+            using var builder = new SKPathBuilder();
+            builder.AddPoly(pts, true);
+            using var path = builder.Detach();
             using var fill = new SKPaint { IsAntialias = true, Color = color, Style = SKPaintStyle.StrokeAndFill, StrokeWidth = 0.75f };
             ctx.Canvas.DrawPath(path, fill);
             if (outline)
@@ -724,10 +732,11 @@ public sealed class KaleidoscopeStyle : ArtStyle
             Rotation: ctx.R(0, 360),
             Color: ctx.Color().WithAlpha((byte)ctx.Ri(160, 256)))).ToList();
 
-        using var clip = new SKPath();
-        clip.MoveTo(0, 0);
-        clip.ArcTo(new SKRect(-radius * 1.5f, -radius * 1.5f, radius * 1.5f, radius * 1.5f), 0, wedge, false);
-        clip.Close();
+        using var clipBuilder = new SKPathBuilder();
+        clipBuilder.MoveTo(0, 0);
+        clipBuilder.ArcTo(new SKRect(-radius * 1.5f, -radius * 1.5f, radius * 1.5f, radius * 1.5f), 0, wedge, false);
+        clipBuilder.Close();
+        using var clip = clipBuilder.Detach();
 
         for (var k = 0; k < segments; k++)
         {
@@ -762,11 +771,12 @@ public sealed class KaleidoscopeStyle : ArtStyle
                         break;
                     case 2:
                     {
-                        using var path = new SKPath();
-                        path.MoveTo(0, -item.Size / 2);
-                        path.LineTo(item.Size / 2, item.Size / 2);
-                        path.LineTo(-item.Size / 2, item.Size / 2);
-                        path.Close();
+                        using var builder = new SKPathBuilder();
+                        builder.MoveTo(0, -item.Size / 2);
+                        builder.LineTo(item.Size / 2, item.Size / 2);
+                        builder.LineTo(-item.Size / 2, item.Size / 2);
+                        builder.Close();
+                        using var path = builder.Detach();
                         ctx.Canvas.DrawPath(path, paint);
                         break;
                     }
