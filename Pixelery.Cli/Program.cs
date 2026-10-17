@@ -84,7 +84,7 @@ internal static class Help
 {
     private const string GeneratorOptions = """
           Source (applied first, then every option below overrides it)
-            -c, --config <file>      Load settings from a JSON file (format of the app's generator.json)
+            -c, --config <file>      Load settings from a JSON file (exported from the app, or generator.json); styles exactly as written
                 --app-config         Load the settings last used in the Pixelery app
                 --save-config <file> Write the effective settings to a JSON file (also usable in the app)
 

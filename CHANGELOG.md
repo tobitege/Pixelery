@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added export and import of the generator settings, so another PC can create the same gallery (#13). The file leaves out the target folder and the thread count. Export fixes an empty seed and an empty reference date; import warns about another Pixelery version or a missing watermark font.
+- Added a reference date in the output settings. Spread file dates, EXIF dates, `{date}` and `{now}` count from it instead of the day of the run.
+- Added translations for the new controls in all 12 languages.
+
+### Changed
+
+- `--config` reads the styles exactly as written; styles added in a newer Pixelery are no longer selected automatically. `--app-config` still selects them, like the app.
+- Warning messages stay on screen for six seconds, like errors.
+
 ## [0.2.0] - 2026-10-17
 
 ### Added

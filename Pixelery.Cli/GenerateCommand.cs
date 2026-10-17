@@ -144,7 +144,7 @@ public static class GenerateCommand
     private static IEnumerable<string> ExampleNames(GeneratorSettings s, IReadOnlyList<ArtStyle> styles, IReadOnlyList<SizeChoice> sizes)
     {
         NameTemplate.TryParse(s.NamePattern, out var template, out _);
-        var now = DateTime.Now;
+        var now = s.ReferenceTime();
         var master = ImageGenerator.ParseSeed(string.IsNullOrWhiteSpace(s.Seed) ? "preview" : s.Seed);
         for (var i = 0; i < Math.Min(3, s.Count); i++)
         {

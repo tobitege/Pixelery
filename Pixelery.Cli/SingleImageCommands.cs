@@ -124,9 +124,10 @@ public static class SingleImageCommands
         var styles = settings.Styles.Select(StyleCatalog.Find).OfType<ArtStyle>().ToList();
         var sizes = settings.BuildSizePool();
         var seed = ImageGenerator.ImageSeed(ImageGenerator.ParseSeed(settings.Seed), 0);
-        var recipe = ImageGenerator.CreateRecipe(settings, styles, sizes, seed, settings.StartIndex, DateTime.Now) with { Format = format };
+        var now = settings.ReferenceTime();
+        var recipe = ImageGenerator.CreateRecipe(settings, styles, sizes, seed, settings.StartIndex, now) with { Format = format };
         var (rendered, palette) = ImageGenerator.Render(recipe);
-        var values = ImageGenerator.CreateNameValues(recipe, 1, ImageGenerator.PaletteSlug(palette), DateTime.Now);
+        var values = ImageGenerator.CreateNameValues(recipe, 1, ImageGenerator.PaletteSlug(palette), now);
         var image = Core.Watermark.WatermarkRenderer.Apply(rendered, settings.Watermark, values, recipe.Seed);
         if (!ReferenceEquals(image, rendered))
             rendered.Dispose();

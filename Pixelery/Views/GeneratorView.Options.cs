@@ -28,7 +28,15 @@ namespace Pixelery.Views
             {
                 InitializeRunPanel();
                 InitializeSideTabs();
+                _sectionLocalizerStart = _localizers.Count;
             };
+            foreach (var step in SectionSteps())
+                yield return step;
+        }
+
+        /// <summary>The configuration sections, built from the current settings; an import builds them again.</summary>
+        private IEnumerable<Action> SectionSteps()
+        {
             yield return () => ReplacePlaceholder(BuildStylesSection());
             foreach (var group in StyleCatalog.All.GroupBy(s => s.Category))
                 yield return () => AddStyleCategory(group);
@@ -656,13 +664,36 @@ namespace Pixelery.Views
                 UpdateNamePreview();
             }, 160);
 
+            // Reference date: empty means the day of the run; a malformed date is shown as an error and not applied.
+            var referenceDate = new DaisyInput
+            {
+                Variant = DaisyInputVariant.Bordered,
+                Text = Settings.ReferenceDate?.ToString(ReferenceDateFormat, CultureInfo.InvariantCulture) ?? string.Empty,
+                Width = 160,
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+            Localize(() => referenceDate.PlaceholderText = L("Output_ReferenceDateToday"));
+            referenceDate.TextChanged += (_, _) =>
+            {
+                var text = referenceDate.Text?.Trim() ?? string.Empty;
+                var valid = DateOnly.TryParseExact(text, ReferenceDateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date);
+                referenceDate.Variant = valid || text.Length == 0 ? DaisyInputVariant.Bordered : DaisyInputVariant.Error;
+                if (!valid && text.Length > 0)
+                    return;
+                Settings.ReferenceDate = valid ? date : null;
+                OnSettingsChanged();
+                UpdateNamePreview();
+            };
+            _referenceDateInput = referenceDate;
+
             var body = new StackPanel { Spacing = 22 };
             body.Children.Add(Block("Output_Folder", folderRow));
             body.Children.Add(Block("Output_Name", nameBlock, "Output_NameHint"));
             body.Children.Add(Columns(300 * SizeFactor,
                 Block("Output_Format", formatBlock),
                 Block("Output_Files", dates),
-                Block("Output_StartIndex", start, "Output_StartIndexHint")));
+                Block("Output_StartIndex", start, "Output_StartIndexHint"),
+                Block("Output_ReferenceDate", referenceDate, "Output_ReferenceDateHint")));
             UpdateNamePreview();
             return Section("DaisyIconFolder", "Section_Output", "Section_OutputHint", body);
         }
@@ -703,7 +734,7 @@ namespace Pixelery.Views
                 _nameExamples.Children.Add(Text(L("Output_NamePreviewUnavailable"), ResponsiveFontTier.Secondary, 0.6));
                 return;
             }
-            var now = DateTime.Now;
+            var now = Settings.ReferenceTime();
             var master = ImageGenerator.ParseSeed(string.IsNullOrWhiteSpace(Settings.Seed) ? "preview" : Settings.Seed);
             for (var i = 0; i < 3; i++)
             {

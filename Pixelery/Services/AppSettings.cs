@@ -268,6 +268,13 @@ namespace Pixelery.Services
             return new GeneratorSettings();
         }
 
+        /// <summary>Uses <paramref name="settings"/> as the generator configuration from now on and saves it.</summary>
+        public static void ReplaceGenerator(GeneratorSettings settings)
+        {
+            Generator = settings;
+            SaveGenerator();
+        }
+
         public static void SaveGenerator()
         {
             try

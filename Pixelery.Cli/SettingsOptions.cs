@@ -265,7 +265,8 @@ public static class SettingsOptions
             return new GeneratorSettings();
         try
         {
-            return SettingsJson.Load(file);
+            // A shared --config file keeps its styles exactly; the app's own settings pick up new styles like the app does.
+            return SettingsJson.Load(file, selectNewStyles: fromApp);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
         {

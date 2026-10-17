@@ -24,7 +24,7 @@ Built with [Flowery.WinUI](https://github.com/tobitege/Flowery.WinUI) (NuGet) an
 - File name schema with placeholders; `\` or `/` creates subfolders
 - JPEG, PNG and WebP; optional spread file dates and EXIF date taken / camera model so photo apps can group by date
 - Watermarks with any number of text and image layers
-- Reproducible: the master seed plus the image index define every image
+- Reproducible: the master seed plus the image index define every image; a settings file recreates a gallery on another PC
 - Cancellable progress with speed, remaining time and a live thumbnail of the latest image
 - Endless slideshow in full screen or a window, nothing saved
 - Full command line control, including desktop background and screen saver
@@ -69,13 +69,23 @@ All selected combinations form a pool; each image picks one size at random.
 | `{w}`, `{h}`, `{ratio}`, `{orient}` | Width, height, aspect ratio (e.g. `16x9`, `7x5`), landscape/portrait/square |
 | `{seed}` | Image seed (hex, `:d` for decimal) to reproduce the image |
 | `{date:yyyy-MM-dd}` | Image date (spread over the past years if enabled), .NET date format |
-| `{now:yyyyMMdd_HHmmss}` | Time of the run |
+| `{now:yyyyMMdd_HHmmss}` | Time of the run, or the end of the reference date |
 | `{rand:6}`, `{guid}` | Random letters and digits, unique id |
 | `{fmt}`, `{total}` | File format, number of images in the run |
 
 Example: `{date:yyyy}\{date:MM}\{style}_{n:00000}` creates year and month folders. The extension is added automatically; existing files are overwritten or get a numeric suffix.
 
-Further options: formats (JPEG, PNG, WebP; several pick at random), quality, spread file dates over N years, EXIF date taken and camera model (JPEG), overwrite existing files.
+Further options: formats (JPEG, PNG, WebP; several pick at random), quality, spread file dates over N years, EXIF date taken and camera model (JPEG), overwrite existing files, and a reference date. The reference date replaces the day of the run for spread file dates, EXIF dates, `{date}` and `{now}`.
+
+## Sharing settings
+
+**Export** in the Generate panel writes every setting except the target folder and the thread count to a JSON file. **Import** loads such a file and keeps the target folder and threads of this PC. With the same file and the same Pixelery version, another PC creates the same images with the same names and dates.
+
+- Export fixes an empty seed and an empty reference date: it picks a random seed and today's date, and sets both in the app as well.
+- Import takes the styles exactly as written. A newer Pixelery does not add its new styles, as it does for its own saved settings.
+- Import warns when the file comes from another Pixelery version, whose styles and palettes can look different, and when a watermark font is not installed. A missing watermark image shows up as a validation error.
+- `{guid}` in the file name schema is random by design; `{rand}` follows the image seed.
+- The command line reads the same files with `--config`, also with the styles exactly as written. `--app-config` adds new styles, like the app.
 
 ## Watermarks
 
@@ -144,7 +154,7 @@ Pixelery.Cli.exe <command> --help
 
 | Area | Options |
 | --- | --- |
-| Settings source | `-c/--config <file>`, `--app-config`, `--save-config <file>` |
+| Settings source | `-c/--config <file>` (styles exactly as written), `--app-config`, `--save-config <file>` |
 | Styles and colors | `-s/--styles`, `--exclude`, `--palettes`, `--tones`, `--detail`, `--grain`, `--vignette` (lists are comma separated, `all` selects everything) |
 | Sizes | `--orientation`, `--ratios`, `--edges`, `--sizes` (given size options replace the sizes of a loaded configuration) |
 | Output | `-o/--out`, `-n/--count`, `-j/--threads` (`max` for all cores), `--seed`, `--formats`, `--quality`, `--name`, `--start`, `--overwrite`, `--spread-dates`, `--spread-years`, `--exif` |
