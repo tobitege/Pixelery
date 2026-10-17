@@ -273,13 +273,13 @@ try {
     $results.Add('Setup and removal reject junction traversal, preserving external data, the link, and the installed payload.')
 
     # A late lock must restore the earlier renamed files, including their original bytes.
-    $oldAsset = Join-Path $install 'Assets/app_icon.svg'
-    Add-Content -LiteralPath $oldAsset -Value '<!-- previous installed version -->'
+    $oldAsset = Join-Path $install 'Assets/app_icon.png'
+    Add-Content -LiteralPath $oldAsset -Value 'previous installed version'
     $before = Get-InstalledHashes
     $locked = [IO.File]::Open((Join-Path $install 'Pixelery.Cli.exe'), [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
     try { Assert-FailedUpdatePreservedFiles $before }
     finally { $locked.Dispose() }
-    Copy-Item -LiteralPath (Join-Path $appSource 'Assets/app_icon.svg') -Destination $oldAsset -Force
+    Copy-Item -LiteralPath (Join-Path $appSource 'Assets/app_icon.png') -Destination $oldAsset -Force
     $results.Add('A locked CLI aborts the update and restores every installed file and manifest byte-for-byte.')
 
     # This unowned file blocks a late destination directory, after payload publication has started.
@@ -287,7 +287,7 @@ try {
     $savedCulture = Join-Path $run 'saved-zh-CN'
     Move-Item -LiteralPath $culture -Destination $savedCulture
     Set-Content -LiteralPath $culture -Value 'Preserve the unowned destination blocker.'
-    Add-Content -LiteralPath $oldAsset -Value '<!-- previous installed version -->'
+    Add-Content -LiteralPath $oldAsset -Value 'previous installed version'
     try {
         $before = Get-InstalledHashes
         Assert-FailedUpdatePreservedFiles $before
@@ -295,7 +295,7 @@ try {
     finally {
         Move-Item -LiteralPath $culture -Destination (Join-Path $run 'destination-blocker.txt')
         Move-Item -LiteralPath $savedCulture -Destination $culture
-        Copy-Item -LiteralPath (Join-Path $appSource 'Assets/app_icon.svg') -Destination $oldAsset -Force
+        Copy-Item -LiteralPath (Join-Path $appSource 'Assets/app_icon.png') -Destination $oldAsset -Force
     }
     Assert-Payload $appSource
     Assert-Payload $cliSource
@@ -390,7 +390,7 @@ try {
         $dialog = [IntPtr]::Zero
         try {
             if ($blockUpdate) {
-                Add-Content -LiteralPath $oldAsset -Value '<!-- previous installed version -->'
+                Add-Content -LiteralPath $oldAsset -Value 'previous installed version'
                 $locked = [IO.File]::Open((Join-Path $install 'Pixelery.Cli.exe'), [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::Read)
             }
             $before = Get-InstalledHashes

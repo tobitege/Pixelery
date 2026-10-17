@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Pixelery.Cli</RootNamespace>
     <AssemblyName>Pixelery.Cli</AssemblyName>
+    <ApplicationIcon>..\Pixelery\Assets\app_icon.ico</ApplicationIcon>
     <IsPackable>false</IsPackable>
     <PublishAot Condition="'$(Configuration)' == 'Release'">true</PublishAot>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>

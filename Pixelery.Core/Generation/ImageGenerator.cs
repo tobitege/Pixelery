@@ -141,16 +141,19 @@ public static class ImageGenerator
         T Pick<T>(IReadOnlyList<T> list) => list[rng.Next(list.Count)];
 
         var date = now;
-        if (settings.SpreadDates && settings.SpreadYears > 0)
+        if (settings.SpreadDates)
         {
-            var days = rng.NextDouble() * settings.SpreadYears * 365.25;
-            date = now.AddDays(-days);
+            if (!settings.HasValidDateRange())
+                throw new ArgumentException("Invalid timestamp range.", nameof(settings));
+            var lastDay = new DateOnly(settings.SpreadTo.Year, settings.SpreadTo.Month,
+                DateTime.DaysInMonth(settings.SpreadTo.Year, settings.SpreadTo.Month));
+            var day = rng.Next(settings.SpreadFrom.DayNumber, lastDay.DayNumber + 1);
             // Plausible daytime instead of the time of the run.
-            date = date.Date.AddHours(7 + rng.NextDouble() * 15);
-            if (date > now)
-                date = now;
+            date = DateOnly.FromDayNumber(day).ToDateTime(TimeOnly.MinValue).AddHours(7 + rng.NextDouble() * 15);
         }
 
+        var sizeIndex = (int)(((long)index - settings.StartIndex) % sizes.Count);
+        if (sizeIndex < 0) sizeIndex += sizes.Count;
         var recipe = new ImageRecipe(
             index,
             seed,
@@ -158,7 +161,9 @@ public static class ImageGenerator
             settings.UsePaletteSet ? PaletteFamily.Curated : Pick(settings.Palettes),
             settings.UsePaletteSet ? BackgroundTone.Dark : Pick(settings.Tones),
             Pick(settings.Details),
-            Pick(sizes),
+            settings.MultipleSizes && settings.RandomSizes
+                ? Pick(sizes)
+                : sizes[settings.MultipleSizes ? sizeIndex : 0],
             Pick(settings.Formats),
             date,
             settings.Grain,
@@ -243,6 +248,8 @@ public static class ImageGenerator
             throw new ArgumentException($"Invalid name pattern: {error}");
         if (styles.Count == 0 || sizes.Count == 0)
             throw new ArgumentException("Nothing to generate.");
+        if (!snapshot.HasValidDateRange())
+            throw new ArgumentException("Invalid timestamp range.", nameof(settings));
 
         var run = new GenerationRun { Total = snapshot.Count, OutputFolder = snapshot.OutputFolder };
         var masterSeed = ParseSeed(snapshot.Seed);

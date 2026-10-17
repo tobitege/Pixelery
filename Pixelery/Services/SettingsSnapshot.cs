@@ -8,6 +8,7 @@ namespace Pixelery.Services
         string? Theme,
         DaisySize Size,
         string Culture,
+        bool UseWindowsAccent,
         bool LivePreview,
         int PreviewIntervalMs,
         bool PreviewsFollowColors,
@@ -17,6 +18,7 @@ namespace Pixelery.Services
             DaisyThemeManager.CurrentThemeName,
             FlowerySizeManager.CurrentSize,
             FloweryLocalization.CurrentCultureName,
+            AppSettings.UseWindowsAccent,
             AppSettings.LivePreview,
             AppSettings.PreviewIntervalMs,
             AppSettings.PreviewsFollowColors,
@@ -24,8 +26,8 @@ namespace Pixelery.Services
 
         public void Restore()
         {
-            if (Theme != null && !string.Equals(Theme, DaisyThemeManager.CurrentThemeName, StringComparison.OrdinalIgnoreCase))
-                DaisyThemeManager.ApplyTheme(Theme);
+            AppSettings.UseWindowsAccent = UseWindowsAccent;
+            FluentThemes.ApplyAccentPreference(Theme);
 
             if (Size != FlowerySizeManager.CurrentSize)
                 FlowerySizeManager.ApplySize(Size);

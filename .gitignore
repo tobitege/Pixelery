@@ -217,6 +217,7 @@ coc-settings.json
 /!winui-ext
 /!winui-themes
 /publish
+/publish-cli
 /publish-local
 
 #################

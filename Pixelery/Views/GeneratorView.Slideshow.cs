@@ -203,15 +203,16 @@ namespace Pixelery.Views
             if (SlideshowProblems().Count > 0)
                 return;
             _slideshow?.Close();
-            var window = new SlideshowWindow(Settings, AppSettings.SlideshowSeed, TimeSpan.FromSeconds(AppSettings.SlideshowSeconds),
-                AppSettings.SlideshowFullScreen, AppSettings.SlideshowCrossfade, AppSettings.SlideshowShowInfo);
+            var window = new SlideshowWindow(XamlRoot.ContentIslandEnvironment.AppWindowId,
+                Settings, AppSettings.SlideshowSeed, TimeSpan.FromSeconds(AppSettings.SlideshowSeconds),
+                AppSettings.SlideshowCrossfade, AppSettings.SlideshowShowInfo);
             window.Closed += (_, _) =>
             {
                 if (ReferenceEquals(_slideshow, window))
                     _slideshow = null;
             };
             _slideshow = window;
-            window.Activate();
+            window.Show(AppSettings.SlideshowFullScreen);
         }
     }
 }

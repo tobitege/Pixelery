@@ -109,6 +109,9 @@ public static class SingleImageCommands
             settings.AspectRatios = [];
             settings.LongEdges = [];
             settings.FixedSizes = [$"{screen.Width}x{screen.Height}"];
+            settings.Orientations = [screen.Width >= screen.Height ? ImageOrientation.Landscape : ImageOrientation.Portrait];
+            settings.MultipleSizes = false;
+            settings.RandomSizes = false;
         }
 
         var problems = settings.Validate().Where(p => p is not ("Validation_Folder" or "Validation_Formats" or "Validation_Name")).ToList();

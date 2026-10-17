@@ -20,6 +20,8 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "Copyright 2026 tobitege"
 !include x64.nsh
 !define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Pixelery"
 !define MUI_LANGDLL_ALLLANGUAGES
+!define MUI_ICON "${__FILEDIR__}\..\Pixelery\Assets\app_icon.ico"
+!define MUI_UNICON "${__FILEDIR__}\..\Pixelery\Assets\app_icon.ico"
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY

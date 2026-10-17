@@ -19,11 +19,17 @@ public enum OutputFormat
 }
 
 /// <summary>
-/// Everything that controls a generation run. Lists are "multiple choice": when several values are enabled,
-/// one is picked at random for every image.
+/// Everything that controls a generation run. Multiple sizes cycle in order unless RandomSizes is enabled;
+/// the other multiple-choice options are sampled for every image.
 /// </summary>
 public sealed class GeneratorSettings
 {
+    public const int CurrentFormatVersion = 1;
+    public const string DefaultNamePattern = "{style}_{n:00000}_{w}x{h}";
+    public const int MaxNamePatterns = 100;
+
+    public int FormatVersion { get; set; } = CurrentFormatVersion;
+
     public string OutputFolder { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Pixelery");
 
     public List<string> Styles { get; set; } = [.. StyleCatalog.All.Select(s => s.Id)];
@@ -48,13 +54,19 @@ public sealed class GeneratorSettings
 
     public bool Vignette { get; set; }
 
-    public List<string> AspectRatios { get; set; } = ["4:3", "3:2", "16:9"];
+    public bool MultipleSizes { get; set; }
+
+    public bool RandomSizes { get; set; }
+
+    public SizeSelection InactiveSizeSelection { get; set; } = new();
+
+    public List<string> AspectRatios { get; set; } = ["16:9"];
 
     public List<string> CustomAspectRatios { get; set; } = [];
 
-    public List<ImageOrientation> Orientations { get; set; } = [ImageOrientation.Landscape, ImageOrientation.Portrait];
+    public List<ImageOrientation> Orientations { get; set; } = [ImageOrientation.Landscape];
 
-    public List<int> LongEdges { get; set; } = [1920, 3840];
+    public List<int> LongEdges { get; set; } = [1920];
 
     public List<int> CustomLongEdges { get; set; } = [];
 
@@ -66,15 +78,20 @@ public sealed class GeneratorSettings
 
     public int Quality { get; set; } = 90;
 
-    public string NamePattern { get; set; } = "{style}_{n:00000}_{w}x{h}";
+    public string NamePattern { get; set; } = DefaultNamePattern;
+
+    /// <summary>Local pattern collection. Shared files contain only <see cref="NamePattern"/>.</summary>
+    public List<string> NamePatterns { get; set; } = [DefaultNamePattern];
 
     public int StartIndex { get; set; } = 1;
 
     public bool Overwrite { get; set; }
 
-    public bool SpreadDates { get; set; } = true;
+    public bool SpreadDates { get; set; }
 
-    public int SpreadYears { get; set; } = 5;
+    public DateOnly SpreadFrom { get; set; } = new(DateTime.Today.Year, 1, 1);
+
+    public DateOnly SpreadTo { get; set; } = new(DateTime.Today.Year, DateTime.Today.Month, 1);
 
     public bool WriteExif { get; set; } = true;
 
@@ -88,29 +105,23 @@ public sealed class GeneratorSettings
     /// <summary>Master seed as text; empty means a new random seed for every run.</summary>
     public string Seed { get; set; } = string.Empty;
 
-    /// <summary>Day the image dates, {date} and {now} count from; empty means the time of the run.</summary>
+    /// <summary>Day for {now} and image dates when spreading is off; empty means the time of the run.</summary>
     public DateOnly? ReferenceDate { get; set; }
 
     /// <summary>Pixelery version that exported these settings; empty in the app's own settings.</summary>
     public string? AppVersion { get; set; }
 
-    /// <summary>The "now" of a run: the end of <see cref="ReferenceDate"/>, so images dated that day still get a daytime, or the current time.</summary>
+    /// <summary>The "now" of a run: the end of <see cref="ReferenceDate"/>, or the current time.</summary>
     public DateTime ReferenceTime() => ReferenceDate?.ToDateTime(new TimeOnly(23, 59, 59)) ?? DateTime.Now;
 
-    /// <summary>The styles of the first release; settings files without <see cref="KnownStyles"/> knew exactly these.</summary>
-    private static readonly string[] FirstReleaseStyles =
-    [
-        "mesh-gradient", "aurora", "gradient-field", "bokeh", "nebula", "bauhaus", "truchet", "low-poly", "subdivision",
-        "circle-packing", "memphis", "isometric", "halftone", "kaleidoscope", "op-art", "flow-field", "marble", "topographic",
-        "watercolor", "paper-layers", "ridgelines", "stained-glass", "plasma", "fractal", "harmonograph", "synthwave",
-        "glitch", "pixel-mosaic", "neon-glow"
-    ];
+    /// <summary>Range endpoints identify whole calendar months, in chronological order.</summary>
+    public bool HasValidDateRange() => SpreadFrom.Year >= 1601 && SpreadFrom.Day == 1
+        && SpreadTo.Day == 1 && SpreadFrom <= SpreadTo;
 
     /// <summary>Selects styles that were added since the settings were saved and marks all current styles as known.</summary>
     public void SelectNewStyles()
     {
-        IEnumerable<string> known = KnownStyles.Count > 0 ? KnownStyles : FirstReleaseStyles;
-        var knownSet = new HashSet<string>(known, StringComparer.OrdinalIgnoreCase);
+        var knownSet = new HashSet<string>(KnownStyles, StringComparer.OrdinalIgnoreCase);
         foreach (var style in StyleCatalog.All.Where(s => !knownSet.Contains(s.Id) && !Styles.Contains(s.Id)))
             Styles.Add(style.Id);
         KnownStyles = [.. StyleCatalog.All.Select(s => s.Id)];
@@ -118,6 +129,142 @@ public sealed class GeneratorSettings
 
     public List<SizeChoice> BuildSizePool() =>
         SizeCatalog.BuildPool(AspectRatios, Orientations, LongEdges, FixedSizes);
+
+    public SizeSelection CaptureSizeSelection() => new()
+    {
+        AspectRatios = [.. AspectRatios], Orientations = [.. Orientations],
+        LongEdges = [.. LongEdges], FixedSizes = [.. FixedSizes]
+    };
+
+    public void SetMultipleSizes(bool enabled)
+    {
+        if (MultipleSizes == enabled)
+            return;
+        var previous = CaptureSizeSelection();
+        AspectRatios = [.. InactiveSizeSelection.AspectRatios];
+        Orientations = [.. InactiveSizeSelection.Orientations];
+        LongEdges = [.. InactiveSizeSelection.LongEdges];
+        FixedSizes = [.. InactiveSizeSelection.FixedSizes];
+        InactiveSizeSelection = previous;
+        MultipleSizes = enabled;
+        RandomSizes = false;
+    }
+
+    public void SelectOrientation(ImageOrientation value)
+    {
+        if (!MultipleSizes)
+            Orientations = [value];
+        else if (!Orientations.Contains(value))
+            Orientations.Add(value);
+        else if (Orientations.Count > 1)
+            Orientations.Remove(value);
+    }
+
+    public void SelectRatio(string value, bool selected)
+    {
+        Select(AspectRatios, value, selected);
+        if (!MultipleSizes && selected)
+        {
+            FixedSizes.Clear();
+        }
+        EnsureSingleSize();
+    }
+
+    public void SelectLongEdge(int value, bool selected)
+    {
+        Select(LongEdges, value, selected);
+        if (!MultipleSizes && selected)
+        {
+            FixedSizes.Clear();
+        }
+        EnsureSingleSize();
+    }
+
+    public void SelectFixedSize(string value, bool selected)
+    {
+        Select(FixedSizes, value, selected);
+        if (!MultipleSizes && selected)
+        {
+            AspectRatios.Clear();
+            LongEdges.Clear();
+        }
+        EnsureSingleSize();
+    }
+
+    private void Select<T>(List<T> values, T value, bool selected)
+    {
+        if (!MultipleSizes && !selected) return;
+        if (!MultipleSizes && selected) values.Clear();
+        values.Remove(value);
+        if (selected) values.Add(value);
+    }
+
+    private void EnsureSingleSize()
+    {
+        if (MultipleSizes || FixedSizes.Count != 0)
+            return;
+        if (AspectRatios.Count == 0) AspectRatios.Add("16:9");
+        if (LongEdges.Count == 0) LongEdges.Add(1920);
+    }
+
+    public void RemoveCustomRatio(string value)
+    {
+        CustomAspectRatios.Remove(value);
+        AspectRatios.Remove(value);
+        InactiveSizeSelection.AspectRatios.Remove(value);
+        RepairSizeSelections();
+    }
+
+    public void RemoveCustomLongEdge(int value)
+    {
+        CustomLongEdges.Remove(value);
+        LongEdges.Remove(value);
+        InactiveSizeSelection.LongEdges.Remove(value);
+        RepairSizeSelections();
+    }
+
+    public void RemoveCustomFixedSize(string value)
+    {
+        CustomFixedSizes.Remove(value);
+        FixedSizes.Remove(value);
+        InactiveSizeSelection.FixedSizes.Remove(value);
+        RepairSizeSelections();
+    }
+
+    private void RepairSizeSelections()
+    {
+        EnsureSingleSize();
+        if (!MultipleSizes || InactiveSizeSelection.FixedSizes.Count != 0) return;
+        if (InactiveSizeSelection.AspectRatios.Count == 0) InactiveSizeSelection.AspectRatios.Add("16:9");
+        if (InactiveSizeSelection.LongEdges.Count == 0) InactiveSizeSelection.LongEdges.Add(1920);
+    }
+
+    public bool TryAddNamePattern(string? value)
+    {
+        var pattern = value?.Trim();
+        if (!NameTemplate.TryParse(pattern, out _, out _))
+            return false;
+        var existing = NamePatterns.Find(p => p.Equals(pattern, StringComparison.Ordinal));
+        if (existing == null)
+        {
+            if (NamePatterns.Count >= MaxNamePatterns)
+                return false;
+            NamePatterns.Add(pattern!);
+        }
+        NamePattern = existing ?? pattern!;
+        return true;
+    }
+
+    public void RemoveNamePattern()
+    {
+        if (NamePatterns.Count <= 1)
+            return;
+        var index = NamePatterns.FindIndex(p => p.Equals(NamePattern, StringComparison.Ordinal));
+        if (index < 0)
+            return;
+        NamePatterns.RemoveAt(index);
+        NamePattern = NamePatterns[Math.Min(index, NamePatterns.Count - 1)];
+    }
 
     public GeneratorSettings Clone()
     {
@@ -134,8 +281,10 @@ public sealed class GeneratorSettings
         clone.LongEdges = [.. LongEdges];
         clone.CustomLongEdges = [.. CustomLongEdges];
         clone.FixedSizes = [.. FixedSizes];
+        clone.InactiveSizeSelection = InactiveSizeSelection.Clone();
         clone.CustomFixedSizes = [.. CustomFixedSizes];
         clone.Formats = [.. Formats];
+        clone.NamePatterns = [.. NamePatterns];
         clone.Watermark = Watermark.Clone();
         return clone;
     }
@@ -154,7 +303,7 @@ public sealed class GeneratorSettings
             problems.Add("Validation_Tones");
         if (Details.Count == 0)
             problems.Add("Validation_Details");
-        if (BuildSizePool().Count == 0)
+        if (!CaptureSizeSelection().IsValid(MultipleSizes) || (RandomSizes && !MultipleSizes) || BuildSizePool().Count == 0)
             problems.Add("Validation_Sizes");
         if (Formats.Count == 0)
             problems.Add("Validation_Formats");
@@ -162,6 +311,8 @@ public sealed class GeneratorSettings
             problems.Add("Validation_Name");
         if (Count < 1)
             problems.Add("Validation_Count");
+        if (!HasValidDateRange())
+            problems.Add("Validation_DateRange");
         if (Watermark.IsActive && Watermark.Layers.Any(l => l is { Enabled: true, Kind: WatermarkLayerKind.Image } && !WatermarkRenderer.CanLoadImage(l.ImagePath)))
             problems.Add("Validation_WatermarkImage");
         return problems;
