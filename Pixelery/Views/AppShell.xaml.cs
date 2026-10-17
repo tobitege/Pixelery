@@ -475,37 +475,49 @@ namespace Pixelery.Views
             };
             AutomationProperties.SetLiveSetting(alert, Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
             Toasts.AddToast(alert);
-            UiTimers.RunOnce(DispatcherQueue, TimeSpan.FromSeconds(variant == DaisyAlertVariant.Error ? 6 : 3.5), () => Toasts.RemoveToast(alert));
+            UiTimers.RunOnce(DispatcherQueue, TimeSpan.FromSeconds(variant is DaisyAlertVariant.Error or DaisyAlertVariant.Warning ? 6 : 3.5), () => Toasts.RemoveToast(alert));
         }
 
         #endregion
 
         #region Pickers
 
-        public async Task<string?> PickPaletteSetFileAsync(bool save)
+        public Task<string?> PickPaletteSetFileAsync(bool save) =>
+            PickJsonFileAsync(save, "palette-set", AppSettings.PaletteDirectory, "Pixelery.PaletteSets", "Colors_SetFileType");
+
+        /// <summary>Settings files start in Documents; the picker remembers the last folder.</summary>
+        public Task<string?> PickSettingsFileAsync(bool save) =>
+            PickJsonFileAsync(save, "pixelery-settings", null, "Pixelery.SettingsFiles", "Run_SettingsFileType");
+
+        private async Task<string?> PickJsonFileAsync(bool save, string suggestedName, string? folder, string settingsIdentifier, string fileTypeKey)
         {
             if (_window == null)
                 return null;
-            var folder = AppSettings.PaletteDirectory;
             if (save)
             {
                 var picker = new Microsoft.Windows.Storage.Pickers.FileSavePicker(_window.AppWindow.Id)
                 {
-                    SuggestedFileName = "palette-set",
+                    SuggestedFileName = suggestedName,
                     DefaultFileExtension = ".json",
-                    SuggestedFolder = folder,
-                    SettingsIdentifier = "Pixelery.PaletteSets"
+                    SettingsIdentifier = settingsIdentifier
                 };
-                picker.FileTypeChoices.Add(L("Colors_SetFileType"), [".json"]);
+                if (folder != null)
+                    picker.SuggestedFolder = folder;
+                else
+                    picker.SuggestedStartLocation = Microsoft.Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
+                picker.FileTypeChoices.Add(L(fileTypeKey), [".json"]);
                 return (await picker.PickSaveFileAsync())?.Path;
             }
             else
             {
                 var picker = new Microsoft.Windows.Storage.Pickers.FileOpenPicker(_window.AppWindow.Id)
                 {
-                    SuggestedFolder = folder,
-                    SettingsIdentifier = "Pixelery.PaletteSets"
+                    SettingsIdentifier = settingsIdentifier
                 };
+                if (folder != null)
+                    picker.SuggestedFolder = folder;
+                else
+                    picker.SuggestedStartLocation = Microsoft.Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
                 picker.FileTypeFilter.Add(".json");
                 return (await picker.PickSingleFileAsync())?.Path;
             }

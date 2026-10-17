@@ -246,7 +246,7 @@ public static class ImageGenerator
 
         var run = new GenerationRun { Total = snapshot.Count, OutputFolder = snapshot.OutputFolder };
         var masterSeed = ParseSeed(snapshot.Seed);
-        var now = DateTime.Now;
+        var now = snapshot.ReferenceTime();
         var reserved = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
         var createdFolders = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
         Directory.CreateDirectory(snapshot.OutputFolder);

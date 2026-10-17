@@ -206,9 +206,10 @@ namespace Pixelery.Views
                     if (settings.Formats.Count == 0)
                         settings.Formats = [OutputFormat.Jpeg];
                     var size = new SizeChoice(width, height, SizeCatalog.RatioLabel(width, height));
-                    var recipe = ImageGenerator.CreateRecipe(settings, styles, [size], seed, settings.StartIndex, DateTime.Now);
+                    var now = settings.ReferenceTime();
+                    var recipe = ImageGenerator.CreateRecipe(settings, styles, [size], seed, settings.StartIndex, now);
                     var (rendered, palette) = ImageGenerator.Render(recipe);
-                    return (rendered, ImageGenerator.CreateNameValues(recipe, settings.Count, ImageGenerator.PaletteSlug(palette), DateTime.Now));
+                    return (rendered, ImageGenerator.CreateNameValues(recipe, settings.Count, ImageGenerator.PaletteSlug(palette), now));
                 }, cts.Token);
                 if (cts.IsCancellationRequested)
                     return;

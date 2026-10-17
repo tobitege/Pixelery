@@ -177,6 +177,30 @@
                                     </Grid>
                                 </StackPanel>
 
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="{Binding [Run_SettingsFile]}" Style="{StaticResource AppCaptionTextStyle}" daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+                                        <daisy:DaisyButton x:Name="ImportSettingsButton"
+                                                           AutomationProperties.AutomationId="ImportSettings"
+                                                           Variant="Primary"
+                                                           HorizontalAlignment="Stretch"
+                                                           Content="{Binding [Run_ImportSettings]}"
+                                                           Click="ImportSettingsButton_Click" />
+                                        <daisy:DaisyButton x:Name="ExportSettingsButton"
+                                                           Grid.Column="1"
+                                                           AutomationProperties.AutomationId="ExportSettings"
+                                                           Variant="Primary"
+                                                           HorizontalAlignment="Stretch"
+                                                           Content="{Binding [Run_ExportSettings]}"
+                                                           Click="ExportSettingsButton_Click" />
+                                    </Grid>
+                                    <TextBlock Text="{Binding [Run_SettingsFileHint]}"
+                                               Opacity="0.6"
+                                               TextWrapping="Wrap"
+                                               Foreground="{ThemeResource DaisyBaseContentBrush}"
+                                               daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
+                                </StackPanel>
+
                                 <Border CornerRadius="10" Padding="14,12" Background="{ThemeResource DaisyBase100Brush}">
                                     <StackPanel x:Name="SummaryPanel" Spacing="6" />
                                 </Border>

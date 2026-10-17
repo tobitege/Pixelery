@@ -88,6 +88,15 @@ public sealed class GeneratorSettings
     /// <summary>Master seed as text; empty means a new random seed for every run.</summary>
     public string Seed { get; set; } = string.Empty;
 
+    /// <summary>Day the image dates, {date} and {now} count from; empty means the time of the run.</summary>
+    public DateOnly? ReferenceDate { get; set; }
+
+    /// <summary>Pixelery version that exported these settings; empty in the app's own settings.</summary>
+    public string? AppVersion { get; set; }
+
+    /// <summary>The "now" of a run: the end of <see cref="ReferenceDate"/>, so images dated that day still get a daytime, or the current time.</summary>
+    public DateTime ReferenceTime() => ReferenceDate?.ToDateTime(new TimeOnly(23, 59, 59)) ?? DateTime.Now;
+
     /// <summary>The styles of the first release; settings files without <see cref="KnownStyles"/> knew exactly these.</summary>
     private static readonly string[] FirstReleaseStyles =
     [
