@@ -1,4 +1,7 @@
 {
+  "Navigation_Home": "Home",
+  "Navigation_OutputSettings": "Go to output settings",
+
   "Update_Title": "Updates",
   "Update_Hint": "Updates are signed and installed for this user. Pixelery restarts after installation. Portable files are kept.",
   "Update_Idle": "Check manually for a new release.",

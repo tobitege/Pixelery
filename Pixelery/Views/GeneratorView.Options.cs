@@ -108,7 +108,9 @@ namespace Pixelery.Views
             var stack = new StackPanel { Spacing = spacing };
             stack.Children.Add(header);
             stack.Children.Add(body);
-            return new Border { Style = (Style)Application.Current.Resources["AppSectionStyle"], Child = stack };
+            var section = new Border { Style = (Style)Application.Current.Resources["AppSectionStyle"], Child = stack };
+            RegisterSection(titleKey, iconKey, section);
+            return section;
         }
 
         /// <summary>Caption above content, optional hint below.</summary>
@@ -527,6 +529,7 @@ namespace Pixelery.Views
         {
             // Folder
             _folderInput = new DaisyInput { Text = Settings.OutputFolder, Variant = DaisyInputVariant.Bordered, StartIconData = Icon("DaisyIconFolder") };
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(_folderInput, "OutputFolderInput");
             _folderInput.TextChanged += (_, _) =>
             {
                 Settings.OutputFolder = _folderInput.Text?.Trim() ?? string.Empty;

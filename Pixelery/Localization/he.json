@@ -1,4 +1,7 @@
 {
+  "Navigation_Home": "בית",
+  "Navigation_OutputSettings": "מעבר להגדרות הפלט",
+
   "Update_Title": "עדכונים",
   "Update_Hint": "העדכונים חתומים ומותקנים עבור המשתמש הזה. לאחר ההתקנה Pixelery יופעל מחדש. קובצי הגרסה הניידת נשמרים.",
   "Update_Idle": "בדיקה ידנית של גרסה חדשה.",

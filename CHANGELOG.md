@@ -5,21 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Changed
-
-- Upgrade SkiaSharp and SkiaSharp.HarfBuzz together to 4.153.1 and migrate rendering to the current path and image APIs.
-- Update Flowery.WinUI to 1.4.0.
-
-### Fixed
-
-- Use continuous opacity for Halftone color transitions instead of changing subpixel dot sizes.
-
 ## [0.2.0] - 2026-10-17
 
 ### Added
 
+- Added a fixed icon sidebar to jump to Home and each configuration section.
+- Show the output folder in the Generate sidebar, with a shortcut to its settings.
+- Show the GitHub icon beside the repository link in the footer.
 - Added all 12 installer languages and initialized the selected app language without replacing existing preferences.
 - Added signed updates in Settings, with download verification, per-user installation, and automatic restart.
 - Added signed release feeds and update tests, including tampered downloads and installation of both applications.
@@ -33,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgrade SkiaSharp and SkiaSharp.HarfBuzz together to 4.153.1 and migrate rendering to the current path and image APIs.
+- Update Flowery.WinUI to 1.4.0.
 - Always install `Pixelery.exe` and `Pixelery.Cli.exe` together at the installation root. Upgrade previous installations from their separate component folders.
 - Renamed the command line executable to `Pixelery.Cli.exe` and its portable archive to `Pixelery.Cli-Windows-x64.zip`.
 - Compiled the Windows app and CLI with Native AOT. Release ZIP files include the required native libraries and assets.
@@ -49,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Use continuous opacity for Halftone color transitions instead of changing subpixel dot sizes.
 - Prevent concurrent installation and removal from changing the same files or registration.
 - Show automatic update failures and restart the previous app after a successful rollback.
 - Preserve update downloads while their ownership files are being created.

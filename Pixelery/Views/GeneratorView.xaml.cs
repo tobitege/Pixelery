@@ -20,6 +20,7 @@ namespace Pixelery.Views
         private static readonly string[] HeroStyles = ["mesh-gradient", "aurora", "marble", "plasma", "flow-field", "paper-layers", "nebula", "stained-glass"];
 
         private readonly List<Action> _localizers = [];
+        private readonly Dictionary<string, FrameworkElement> _sectionTargets = [];
         private AppShell? _shell;
         private DispatcherQueueTimer? _saveTimer;
         private CancellationTokenSource? _heroCts;
@@ -28,6 +29,7 @@ namespace Pixelery.Views
         public GeneratorView()
         {
             InitializeComponent();
+            FooterGitHubIcon.Data = ToGeometry(Icon("DaisyIconBrandGitHub")!);
             AppLocalization.Instance.PropertyChanged += (_, _) => DispatcherQueue.TryEnqueue(OnLanguageChanged);
             DaisyThemeManager.ThemeChanged += (_, _) => DispatcherQueue.TryEnqueue(OnThemeChanged);
             FlowerySizeManager.SizeChanged += (_, _) => DispatcherQueue.TryEnqueue(ApplyScale);
@@ -49,6 +51,9 @@ namespace Pixelery.Views
         {
             _shell = shell;
             StartButton.IsEnabled = false;
+            GoToOutputButton.IsEnabled = false;
+            LocalizeTip(HomeButton, "Navigation_Home");
+            LocalizeTip(GoToOutputButton, "Navigation_OutputSettings");
             AddPlaceholders();
             FooterText.Text = $"Pixelery {Core.AppInfo.Version(typeof(GeneratorView).Assembly)} · {Core.AppInfo.Copyright} · {Core.AppInfo.License} ·";
             ToolTipService.SetToolTip(FooterLink, Core.AppInfo.RepositoryUrl);
@@ -157,6 +162,40 @@ namespace Pixelery.Views
         private void FooterLink_Click(object sender, RoutedEventArgs e) =>
             _ = Windows.System.Launcher.LaunchUriAsync(new Uri(Core.AppInfo.RepositoryUrl));
 
+        private void HomeButton_Click(object sender, RoutedEventArgs e) =>
+            ConfigScroller.ChangeView(null, 0, null);
+
+        private void GoToOutputButton_Click(object sender, RoutedEventArgs e) =>
+            NavigateToSection("Section_Output");
+
+        private void NavigateToSection(string key)
+        {
+            if (_sectionTargets.TryGetValue(key, out var section))
+                section.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = true, VerticalAlignmentRatio = 0 });
+        }
+
+        private void RegisterSection(string key, string iconKey, FrameworkElement section)
+        {
+            AutomationProperties.SetAutomationId(section, key);
+            if (!_sectionTargets.ContainsKey(key))
+            {
+                var button = new DaisyButton
+                {
+                    Variant = DaisyButtonVariant.Ghost,
+                    Shape = DaisyButtonShape.Square,
+                    Size = DaisySize.Medium,
+                    IconData = Icon(iconKey)
+                };
+                FlowerySizeManager.SetIgnoreGlobalSize(button, true);
+                AutomationProperties.SetAutomationId(button, "Navigate_" + key);
+                LocalizeTip(button, key);
+                button.Click += (_, _) => NavigateToSection(key);
+                SectionNavigation.Children.Add(button);
+            }
+            _sectionTargets[key] = section;
+            GoToOutputButton.IsEnabled = _sectionTargets.ContainsKey("Section_Output");
+        }
+
         #region Hero
 
         private void HeroShuffleButton_Click(object sender, RoutedEventArgs e) => _ = RenderHeroAsync(true);
@@ -227,6 +266,7 @@ namespace Pixelery.Views
             if (!_initialized)
                 return;
 
+            OutputFolderSummary.Text = Settings.OutputFolder;
             var sizes = Settings.BuildSizePool();
             var styles = Settings.Styles.Count(id => StyleCatalog.Find(id) != null);
             SummaryPanel.Children.Clear();

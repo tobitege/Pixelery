@@ -1,4 +1,7 @@
 {
+  "Navigation_Home": "Accueil",
+  "Navigation_OutputSettings": "Aller aux paramètres de sortie",
+
   "Update_Title": "Mises à jour",
   "Update_Hint": "Les mises à jour sont signées et installées pour cet utilisateur. Pixelery redémarre ensuite. Les fichiers portables sont conservés.",
   "Update_Idle": "Rechercher manuellement une nouvelle version.",
