@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Upgrade SkiaSharp and SkiaSharp.HarfBuzz together to 4.153.1 and migrate rendering to the current path and image APIs.
 
+### Fixed
+
+- Use continuous opacity for Halftone color transitions instead of changing subpixel dot sizes.
+
 ## [0.2.0] - 2026-10-17
 
 ### Added

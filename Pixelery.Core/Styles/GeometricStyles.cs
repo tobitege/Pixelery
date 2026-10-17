@@ -677,7 +677,8 @@ public sealed class HalftoneStyle : ArtStyle
             var cos = MathF.Cos(angle);
             var sin = MathF.Sin(angle);
             var offset = new SKPoint(ctx.R(0, 1000), ctx.R(0, 1000));
-            using var paint = ctx.Fill(ctx.Palette[l + ctx.Ri(0, 5)]);
+            var color = ctx.Palette[l + ctx.Ri(0, 5)];
+            using var paint = ctx.Fill(color);
             paint.BlendMode = layers > 1 ? blend : SKBlendMode.SrcOver;
             var extent = ctx.Max * 0.75f;
             for (var gy = -extent; gy <= extent; gy += spacing)
@@ -694,9 +695,9 @@ public sealed class HalftoneStyle : ArtStyle
                         1 => 1 - MathF.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / ctx.Max,
                         _ => MathF.Sin((x * cos + y * sin) * freq * 8 + l) * 0.5f + 0.5f
                     };
-                    var r = spacing * 0.55f * Math.Clamp(v, 0, 1);
-                    if (r > 0.3f)
-                        ctx.Canvas.DrawCircle(x, y, r, paint);
+                    // Keep the tonal ramp independent of subpixel circle coverage.
+                    paint.Color = color.WithAlpha((byte)MathF.Round(color.Alpha * Math.Clamp(v, 0, 1)));
+                    ctx.Canvas.DrawCircle(x, y, spacing * 0.55f, paint);
                 }
             }
         }
