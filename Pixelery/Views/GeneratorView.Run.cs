@@ -61,17 +61,13 @@ namespace Pixelery.Views
             for (var i = 0; i < stats.Length; i++)
             {
                 var key = stats[i];
-                if (i % 2 == 0)
-                    StatsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
                 var cell = new StackPanel { Spacing = 1 };
-                var caption = Responsive(new TextBlock { Style = (Style)Application.Current.Resources["AppCaptionTextStyle"] }, ResponsiveFontTier.Secondary);
+                var caption = Responsive(new TextBlock { Style = (Style)Application.Current.Resources["AppCaptionTextStyle"], TextWrapping = TextWrapping.Wrap }, ResponsiveFontTier.Secondary);
                 Localize(() => caption.Text = L($"Stat_{key}"));
                 var value = Text("–", ResponsiveFontTier.Primary);
                 value.FontWeight = FontWeights.SemiBold;
                 cell.Children.Add(caption);
                 cell.Children.Add(value);
-                Grid.SetRow(cell, i / 2);
-                Grid.SetColumn(cell, i % 2);
                 StatsGrid.Children.Add(cell);
                 _statValues[key] = value;
             }
@@ -116,6 +112,7 @@ namespace Pixelery.Views
             PreviewLoading.Visibility = AppSettings.LivePreview ? Visibility.Visible : Visibility.Collapsed;
             PreviewOffText.Visibility = AppSettings.LivePreview ? Visibility.Collapsed : Visibility.Visible;
             PreviewCaption.Text = string.Empty;
+            PreviewDetails.Text = string.Empty;
 
             _shell?.SetRunning(true);
             _progressTimer ??= CreateProgressTimer();
@@ -256,7 +253,8 @@ namespace Pixelery.Views
                     return;
                 PreviewImage.Source = bitmap;
                 PreviewLoading.Visibility = Visibility.Collapsed;
-                PreviewCaption.Text = $"{System.IO.Path.GetFileName(preview.FilePath)} · {preview.Width}×{preview.Height} · {preview.Style}";
+                PreviewCaption.Text = System.IO.Path.GetFileName(preview.FilePath);
+                PreviewDetails.Text = $"{preview.Width}×{preview.Height} · {preview.Style}";
                 ToolTipService.SetToolTip(PreviewCaption, preview.FilePath);
             }
             catch

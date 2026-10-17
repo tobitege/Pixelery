@@ -2,11 +2,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using Pixelery.Core.Styles;
 using Pixelery.Services;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Media.Imaging;
 using static Pixelery.Views.UiHelpers;
 
 namespace Pixelery.Views
 {
-    /// <summary>Style selection: category groups of cards with live previews.</summary>
+    /// <summary>Style selection: category groups with cards or compact rows.</summary>
     public sealed partial class GeneratorView
     {
         private const int PreviewWidth = 400;
@@ -24,8 +26,32 @@ namespace Pixelery.Views
         /// <summary>The styles section with its header; categories are added one by one (<see cref="AddStyleCategory"/>).</summary>
         private Border BuildStylesSection()
         {
-            var body = new StackPanel { Spacing = 18 };
-            _stylesBody = body;
+            var body = new StackPanel { Spacing = 6 };
+            _stylesBody = new StackPanel { Spacing = 18 };
+            var viewSelector = new DaisySelect { Width = 240, HorizontalAlignment = HorizontalAlignment.Right };
+            StyleViewMode[] viewModes = [StyleViewMode.PreviewList, StyleViewMode.Cards, StyleViewMode.TextList, StyleViewMode.TextOnly];
+            var updatingViewSelector = false;
+            AutomationProperties.SetAutomationId(viewSelector, "StyleViewSelector");
+            Localize(() =>
+            {
+                updatingViewSelector = true;
+                var items = viewModes
+                    .Select(mode => new SelectOption(mode, L($"Styles_View_{mode}"))).ToList();
+                viewSelector.ItemsSource = items;
+                viewSelector.SelectedItem = items.First(item => Equals(item.Key, AppSettings.StyleView));
+                AutomationProperties.SetName(viewSelector, L("Styles_View"));
+                updatingViewSelector = false;
+            });
+            viewSelector.SelectionChanged += (_, _) =>
+            {
+                if (updatingViewSelector || viewSelector.SelectedItem is not SelectOption { Key: StyleViewMode mode } || mode == AppSettings.StyleView)
+                    return;
+                AppSettings.StyleView = mode;
+                ApplyStyleView();
+                AppSettings.SaveOptions();
+            };
+            body.Children.Add(viewSelector);
+            body.Children.Add(_stylesBody);
             var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
             _styleCountBadge = new DaisyBadge { Variant = DaisyBadgeVariant.Primary, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
             actions.Children.Add(_styleCountBadge);
@@ -46,10 +72,10 @@ namespace Pixelery.Views
             };
             actions.Children.Add(shuffle);
 
-            return Section("AppIconBrush", "Section_Styles", "Section_StylesHint", body, actions);
+            return Section("AppIconBrush", "Section_Styles", "Section_StylesHint", body, actions, spacing: 8);
         }
 
-        /// <summary>Adds the cards of one category and starts rendering their previews.</summary>
+        /// <summary>Adds one category with bundled previews shared by all style views.</summary>
         private void AddStyleCategory(IGrouping<StyleCategory, ArtStyle> group)
         {
             var category = group.Key;
@@ -58,11 +84,18 @@ namespace Pixelery.Views
             check.Click += (_, _) => ToggleCategory(category);
             _categoryChecks[category] = check;
 
-            var grid = new WrapPanel { MinItemWidth = 220 * SizeFactor, HorizontalSpacing = 14, VerticalSpacing = 14 };
+            var grid = new WrapPanel
+            {
+                MinItemWidth = 220 * SizeFactor,
+                HorizontalSpacing = 14
+            };
+            ApplyStyleGridLayout(grid);
             var cards = new List<StyleCard>();
             foreach (var style in group)
             {
                 var card = new StyleCard(style) { IsSelected = Settings.Styles.Contains(style.Id) };
+                card.SetImage(new BitmapImage(new Uri($"ms-appx:///Assets/Previews/{style.Id}.jpg")));
+                card.ApplyViewMode(AppSettings.StyleView);
                 card.Toggled += (_, _) => OnCardToggled(card);
                 card.PreviewRequested += (_, _) => _shell?.ShowStylePreview(style);
                 cards.Add(card);
@@ -76,7 +109,31 @@ namespace Pixelery.Views
             block.Children.Add(grid);
             _stylesBody?.Children.Add(block);
             UpdateStyleSelectionUi();
-            RenderCards(cards);
+        }
+
+        private void ApplyStyleView()
+        {
+            foreach (var grid in _styleGrids)
+                ApplyStyleGridLayout(grid);
+            foreach (var card in _cards)
+                card.ApplyViewMode(AppSettings.StyleView);
+        }
+
+        private static void ApplyStyleGridLayout(WrapPanel grid)
+        {
+            grid.ColumnCount = AppSettings.StyleView switch
+            {
+                StyleViewMode.Cards => 0,
+                StyleViewMode.TextOnly => 2,
+                _ => 1
+            };
+            grid.VerticalSpacing = AppSettings.StyleView switch
+            {
+                StyleViewMode.Cards => 14,
+                StyleViewMode.TextOnly => 4,
+                _ => 6
+            };
+            grid.InvalidateMeasure();
         }
 
         private DaisyButton ActionButton(string key, Action onClick)

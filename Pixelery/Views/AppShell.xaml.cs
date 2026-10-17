@@ -8,6 +8,7 @@ using Pixelery.Core.Watermark;
 using Pixelery.Localization;
 using Pixelery.Services;
 using Microsoft.UI.Xaml.Automation;
+using DispatcherQueueTimer = Microsoft.UI.Dispatching.DispatcherQueueTimer;
 using Windows.System;
 using static Pixelery.Views.UiHelpers;
 
@@ -24,6 +25,9 @@ namespace Pixelery.Views
         private SlideOverride? _previewSlide;
         private Action<WatermarkSettings>? _watermarkCommit;
         private CancellationTokenSource? _previewCts;
+        private DispatcherQueueTimer? _previewSlideshowTimer;
+        private SlideshowWindow? _previewFullScreen;
+        private bool _isPreviewRendering;
 
         public AppShell()
         {
@@ -67,7 +71,15 @@ namespace Pixelery.Views
             UpdateLocalizedChrome();
         }
 
-        public void Shutdown() => Generator.Shutdown();
+        public void Shutdown()
+        {
+            if (PreviewSlideshowCheck != null)
+                PreviewSlideshowCheck.IsChecked = false;
+            UiTimers.Cancel(_previewSlideshowTimer);
+            _previewCts?.Cancel();
+            _previewFullScreen?.Close();
+            Generator.Shutdown();
+        }
 
         /// <summary>Shows a spinner in the title bar while a run is active.</summary>
         public void SetRunning(bool running) =>
@@ -148,11 +160,24 @@ namespace Pixelery.Views
                 return;
             FindName(nameof(PreviewDialog));
             PreviewDialogFrame.BorderBrush = WindowsAccent.Brush;
+            PreviewSlideshowSeconds.Minimum = 1;
+            PreviewSlideshowSeconds.Maximum = 999;
+            PreviewSlideshowSeconds.Value = 3;
+            PreviewSlideshowSeconds.Increment = 1;
             PreviewDialog!.RegisterPropertyChangedCallback(DaisyModal.IsOpenProperty, (_, _) =>
             {
                 if (!PreviewDialog.IsOpen)
+                {
+                    UiTimers.Cancel(_previewSlideshowTimer);
+                    _previewSlideshowTimer = null;
+                    PreviewSlideshowCheck.IsChecked = false;
                     _previewCts?.Cancel();
+                }
             });
+            PreviewSlideshowSeconds.RegisterPropertyChangedCallback(DaisyNumericUpDown.ValueProperty,
+                (_, _) => SchedulePreviewSlideshow());
+            PreviewSlideshowCheck.RegisterPropertyChangedCallback(DaisyCheckBox.IsCheckedProperty,
+                (_, _) => SchedulePreviewSlideshow());
             UpdateLocalizedChrome();
         }
 
@@ -246,21 +271,55 @@ namespace Pixelery.Views
 
         private void PreviewShuffle_Click(object sender, RoutedEventArgs e) => _ = RenderPreviewAsync();
 
+        private void SchedulePreviewSlideshow()
+        {
+            UiTimers.Cancel(_previewSlideshowTimer);
+            _previewSlideshowTimer = null;
+            if (PreviewDialog?.IsOpen != true || PreviewSlideshowCheck.IsChecked != true || _isPreviewRendering || _previewFullScreen != null)
+                return;
+
+            var seconds = Math.Clamp(decimal.Truncate(PreviewSlideshowSeconds.Value ?? 3), 1, 999);
+            _previewSlideshowTimer = UiTimers.RunOnce(DispatcherQueue, TimeSpan.FromSeconds((double)seconds), () =>
+            {
+                _previewSlideshowTimer = null;
+                _ = RenderPreviewAsync();
+            });
+        }
+
         private void PreviewClose_Click(object sender, RoutedEventArgs e) => PreviewDialog.IsOpen = false;
 
         /// <summary>
-        /// Full screen view of the previewed style: starts paused with the image shown in the dialog (at screen
-        /// resolution); → shows further variants, Space runs it as a slideshow of this style, Esc closes it.
+        /// Full screen view of the previewed style, using the dialog's slideshow state and interval.
+        /// The dialog's own timer resumes when the full screen window closes.
         /// </summary>
         private void PreviewFullScreen_Click(object sender, RoutedEventArgs e)
         {
             if (_previewStyle is not { } style)
                 return;
+            if (_previewFullScreen is { } existing)
+            {
+                existing.Activate();
+                return;
+            }
             var settings = AppSettings.Generator.Clone();
             settings.Styles = [style.Id];
+            var seconds = Math.Clamp(decimal.Truncate(PreviewSlideshowSeconds.Value ?? 3), 1, 999);
             var window = new SlideshowWindow(settings, Random.Shared.Next().ToString(CultureInfo.InvariantCulture),
-                TimeSpan.FromSeconds(AppSettings.SlideshowSeconds), fullScreen: true, AppSettings.SlideshowCrossfade,
-                AppSettings.SlideshowShowInfo, startPaused: true, first: _previewSlide is { } slide && slide.Style == style ? slide : null);
+                TimeSpan.FromSeconds((double)seconds), fullScreen: true, AppSettings.SlideshowCrossfade,
+                AppSettings.SlideshowShowInfo, startPaused: PreviewSlideshowCheck.IsChecked != true,
+                first: _previewSlide is { } slide && slide.Style == style ? slide : null);
+            _previewFullScreen = window;
+            UiTimers.Cancel(_previewSlideshowTimer);
+            _previewSlideshowTimer = null;
+            _previewCts?.Cancel();
+            window.Closed += (_, _) =>
+            {
+                if (ReferenceEquals(_previewFullScreen, window))
+                {
+                    _previewFullScreen = null;
+                    SchedulePreviewSlideshow();
+                }
+            };
             window.Activate();
         }
 
@@ -268,11 +327,13 @@ namespace Pixelery.Views
         {
             if (_previewStyle is not { } style)
                 return;
+            UiTimers.Cancel(_previewSlideshowTimer);
+            _previewSlideshowTimer = null;
+            _isPreviewRendering = true;
             _previewCts?.Cancel();
             var cts = new CancellationTokenSource();
             _previewCts = cts;
             PreviewDialogLoading.Visibility = Visibility.Visible;
-            PreviewDialogImage.Opacity = 0.4;
 
             var scale = XamlRoot?.RasterizationScale ?? 1;
             var width = (int)(PreviewDialogContent.Width * scale);
@@ -291,17 +352,22 @@ namespace Pixelery.Views
                     var tone = tones[rng.Next(tones.Count)];
                     var detail = details[rng.Next(details.Count)];
                     var imageSeed = rng.Next();
-                    var (image, palette) = ImageGenerator.Render(style, imageSeed, family, tone, detail, width, height, settings.Grain, settings.Vignette);
+                    var sample = settings.UsePaletteSet ? settings.PaletteSet.Entries[rng.Next(settings.PaletteSet.Entries.Count)] : null;
+                    family = sample?.Family ?? family;
+                    tone = sample?.Tone ?? tone;
+                    var (image, palette) = ImageGenerator.Render(style, imageSeed, family, tone, detail, width, height, settings.Grain, settings.Vignette, sample);
                     using (image)
                     {
                         var info = $"{palette.Name} · {L($"Palette_{family}")} · {L($"Tone_{tone}")} · {L($"Detail_{detail}")} · {AppLocalization.Format("Preview_Seed", (uint)imageSeed)}";
-                        return (ImageEncoder.Encode(image, OutputFormat.Jpeg, 92, null), info, new SlideOverride(style, imageSeed, family, tone, detail));
+                        return (ImageEncoder.Encode(image, OutputFormat.Jpeg, 92, null), info, new SlideOverride(style, imageSeed, family, tone, detail, sample));
                     }
                 }, cts.Token);
                 if (cts.IsCancellationRequested)
                     return;
-                PreviewDialogImage.Source = await PreviewRenderer.ToBitmapAsync(bytes);
-                PreviewDialogImage.Opacity = 1;
+                var bitmap = await PreviewRenderer.ToBitmapAsync(bytes);
+                if (cts.IsCancellationRequested)
+                    return;
+                PreviewDialogImage.Source = bitmap;
                 PreviewInfo.Text = info;
                 ToolTipService.SetToolTip(PreviewInfo, info);
                 _previewSlide = slide;
@@ -312,12 +378,20 @@ namespace Pixelery.Views
             }
             catch (Exception ex)
             {
-                ShowToast(ex.Message, DaisyAlertVariant.Error);
+                if (ReferenceEquals(_previewCts, cts))
+                {
+                    PreviewSlideshowCheck.IsChecked = false;
+                    ShowToast(ex.Message, DaisyAlertVariant.Error);
+                }
             }
             finally
             {
                 if (ReferenceEquals(_previewCts, cts))
+                {
+                    _isPreviewRendering = false;
                     PreviewDialogLoading.Visibility = Visibility.Collapsed;
+                    SchedulePreviewSlideshow();
+                }
             }
         }
 
@@ -342,6 +416,35 @@ namespace Pixelery.Views
         #endregion
 
         #region Pickers
+
+        public async Task<string?> PickPaletteSetFileAsync(bool save)
+        {
+            if (_window == null)
+                return null;
+            var folder = AppSettings.PaletteDirectory;
+            if (save)
+            {
+                var picker = new Microsoft.Windows.Storage.Pickers.FileSavePicker(_window.AppWindow.Id)
+                {
+                    SuggestedFileName = "palette-set",
+                    DefaultFileExtension = ".json",
+                    SuggestedFolder = folder,
+                    SettingsIdentifier = "Pixelery.PaletteSets"
+                };
+                picker.FileTypeChoices.Add(L("Colors_SetFileType"), [".json"]);
+                return (await picker.PickSaveFileAsync())?.Path;
+            }
+            else
+            {
+                var picker = new Microsoft.Windows.Storage.Pickers.FileOpenPicker(_window.AppWindow.Id)
+                {
+                    SuggestedFolder = folder,
+                    SettingsIdentifier = "Pixelery.PaletteSets"
+                };
+                picker.FileTypeFilter.Add(".json");
+                return (await picker.PickSingleFileAsync())?.Path;
+            }
+        }
 
         public async Task<string?> PickFolderAsync()
         {

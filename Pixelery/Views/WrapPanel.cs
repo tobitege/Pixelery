@@ -13,8 +13,11 @@ namespace Pixelery.Views
         /// <summary>Minimum column width for uniform grids; 0 keeps natural widths.</summary>
         public double MinItemWidth { get; set; }
 
+        /// <summary>Fixed number of columns; 0 derives the count from the available width.</summary>
+        public int ColumnCount { get; set; }
+
         private int Columns(double available) =>
-            Math.Max(1, (int)((available + HorizontalSpacing) / (MinItemWidth + HorizontalSpacing)));
+            ColumnCount > 0 ? ColumnCount : Math.Max(1, (int)((available + HorizontalSpacing) / (MinItemWidth + HorizontalSpacing)));
 
         private double ColumnWidth(double available, int columns) =>
             Math.Max(0, (available - HorizontalSpacing * (columns - 1)) / columns);

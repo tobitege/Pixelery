@@ -113,6 +113,8 @@ namespace Pixelery.Views
         private void ApplyScale()
         {
             var f = SizeFactor;
+            StatsGrid.MinItemWidth = 110 * f;
+            StatsGrid.InvalidateMeasure();
             HeroTitle.FontSize = 34 * f;
             ConfigStack.Spacing = 20 * f;
             if (_styleGrids.Count > 0)
@@ -123,6 +125,8 @@ namespace Pixelery.Views
                     grid.InvalidateMeasure();
                 }
             }
+            foreach (var card in _cards)
+                card.ApplyViewMode(AppSettings.StyleView);
         }
 
         /// <summary>Marks the settings as changed: refreshes the summary and saves after a short delay.</summary>
@@ -201,7 +205,10 @@ namespace Pixelery.Views
                 var bytes = await PreviewRenderer.RenderAsync(style, rng.Next(), heroSettings, true, width, height, cts.Token);
                 if (cts.IsCancellationRequested)
                     return;
-                HeroImage.Source = await PreviewRenderer.ToBitmapAsync(bytes);
+                var bitmap = await PreviewRenderer.ToBitmapAsync(bytes);
+                if (cts.IsCancellationRequested)
+                    return;
+                HeroImageBrush.ImageSource = bitmap;
                 HeroImage.Opacity = 1;
                 ToolTipService.SetToolTip(HeroShuffleButton, $"{L("Hero_Shuffle")} · {style.Name}");
             }
@@ -224,7 +231,9 @@ namespace Pixelery.Views
             var styles = Settings.Styles.Count(id => StyleCatalog.Find(id) != null);
             SummaryPanel.Children.Clear();
             SummaryPanel.Children.Add(SummaryLine("AppIconBrush", AppLocalization.Format("Summary_Styles", styles, StyleCatalog.All.Count)));
-            SummaryPanel.Children.Add(SummaryLine("AppIconPalette", AppLocalization.Format("Summary_Palettes", Settings.Palettes.Count, Settings.Tones.Count)));
+            SummaryPanel.Children.Add(SummaryLine("AppIconPalette", Settings.UsePaletteSet
+                ? AppLocalization.Format("Colors_SetSummary", Settings.PaletteSet.Entries.Count)
+                : AppLocalization.Format("Summary_Palettes", Settings.Palettes.Count, Settings.Tones.Count)));
             if (sizes.Count > 0)
             {
                 var minMp = sizes.Min(s => s.Megapixels);

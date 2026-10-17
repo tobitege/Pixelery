@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-10-17
+
+### Added
+
+- Added four style layouts: Cards, preview list, text list, and a compact text layout with two columns.
+- Added automatic slideshows in the preview dialog and fullscreen, with intervals from 1 to 999 seconds and a three-second default.
+- Added reusable sets of eight palettes with individual Keep controls, JSON import and export, and optional use for image generation.
+- Added translations for the new controls in all 12 languages.
+
+### Changed
+
+- Made the preview list the default style layout and added a compact view selector.
+- Included thumbnails for all 37 styles to avoid generation at startup. Added a CLI command to regenerate these thumbnails.
+- Enlarged preview buttons and adjusted their size for each layout. Unselected styles now show an empty selection indicator.
+- Replaced preview dimming with a one-pixel border in the secondary theme color during generation.
+- Made palette controls larger and preserved Keep selections during palette regeneration.
+- Remembered the last successful palette export folder across restarts, with the app data folder as the default location.
+- Wrapped long output filenames, separated image details, and adapted sidebar statistics to the available width.
+
+### Fixed
+
+- Stopped the header from growing after each background regeneration.
+- Removed persistent focus rings after closing a style preview and used theme colors for selection borders.
+- Kept progress percentages clear of the sidebar scrollbar.
+- Aligned the arcs of neighboring Truchet tiles in patterns with multiple rings.
+
+### Security
+
+- Validated saved directory paths and limited automatic palette folder creation to the app data directory.
+
 ## [0.1.1] - 2026-10-16
 
 ### Changed

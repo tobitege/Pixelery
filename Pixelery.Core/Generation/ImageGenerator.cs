@@ -22,7 +22,10 @@ public sealed record ImageRecipe(
     OutputFormat Format,
     DateTime Date,
     bool Grain,
-    bool Vignette);
+    bool Vignette)
+{
+    public PaletteSample? SamplePalette { get; init; }
+}
 
 /// <summary>The most recent preview published by a run.</summary>
 public sealed record GenerationPreview(byte[] Jpeg, string FilePath, int Width, int Height, string Style);
@@ -148,36 +151,42 @@ public static class ImageGenerator
                 date = now;
         }
 
-        return new ImageRecipe(
+        var recipe = new ImageRecipe(
             index,
             seed,
             Pick(styles),
-            Pick(settings.Palettes),
-            Pick(settings.Tones),
+            settings.UsePaletteSet ? PaletteFamily.Curated : Pick(settings.Palettes),
+            settings.UsePaletteSet ? BackgroundTone.Dark : Pick(settings.Tones),
             Pick(settings.Details),
             Pick(sizes),
             Pick(settings.Formats),
             date,
             settings.Grain,
             settings.Vignette);
+        if (settings.UsePaletteSet)
+        {
+            var sample = Pick(settings.PaletteSet.Entries);
+            recipe = recipe with { Family = sample.Family, Tone = sample.Tone, SamplePalette = sample };
+        }
+        return recipe;
     }
 
     /// <summary>The palette <see cref="Render(ImageRecipe)"/> will use, without rendering (for name previews).</summary>
     public static Palette CreatePalette(ImageRecipe recipe) =>
-        PaletteFactory.Create(new Random(recipe.Seed ^ RenderSalt), recipe.Family, recipe.Tone);
+        recipe.SamplePalette?.ToPalette() ?? PaletteFactory.Create(new Random(recipe.Seed ^ RenderSalt), recipe.Family, recipe.Tone);
 
     /// <summary>Renders the recipe into a new image. The caller disposes the image.</summary>
     public static (SKImage Image, Palette Palette) Render(ImageRecipe recipe) =>
-        Render(recipe.Style, recipe.Seed, recipe.Family, recipe.Tone, recipe.Detail, recipe.Size.Width, recipe.Size.Height, recipe.Grain, recipe.Vignette);
+        Render(recipe.Style, recipe.Seed, recipe.Family, recipe.Tone, recipe.Detail, recipe.Size.Width, recipe.Size.Height, recipe.Grain, recipe.Vignette, recipe.SamplePalette);
 
     public static (SKImage Image, Palette Palette) Render(ArtStyle style, int seed, PaletteFamily family, BackgroundTone tone, DetailLevel detail,
-        int width, int height, bool grain, bool vignette)
+        int width, int height, bool grain, bool vignette, PaletteSample? samplePalette = null)
     {
         var info = new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Premul);
         using var surface = SKSurface.Create(info)
             ?? throw new InvalidOperationException($"Could not allocate a {width}×{height} image.");
         var rng = new Random(seed ^ RenderSalt);
-        var palette = PaletteFactory.Create(rng, family, tone);
+        var palette = samplePalette?.ToPalette() ?? PaletteFactory.Create(rng, family, tone);
         var level = detail switch
         {
             DetailLevel.Low => 0.2f,

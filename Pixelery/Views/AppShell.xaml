@@ -146,39 +146,64 @@
                                            IconSymbol="Cancel"
                                            Click="PreviewClose_Click" />
                     </Grid>
-                    <Border x:Name="PreviewImageFrame"
-                            Grid.Row="1"
-                            CornerRadius="12"
-                            Background="{ThemeResource DaisyBase300Brush}">
-                        <Grid>
-                            <daisy:DaisyLoading x:Name="PreviewDialogLoading"
-                                                Variant="Dots"
-                                                HorizontalAlignment="Center"
-                                                VerticalAlignment="Center" />
-                            <Image x:Name="PreviewDialogImage" Stretch="UniformToFill" />
-                        </Grid>
-                    </Border>
+                    <Grid x:Name="PreviewImageFrame"
+                          Grid.Row="1"
+                          CornerRadius="12"
+                          Background="{ThemeResource DaisyBase300Brush}">
+                        <Border BorderThickness="1" BorderBrush="Transparent" CornerRadius="12">
+                            <Grid>
+                                <daisy:DaisyLoading x:Name="PreviewDialogLoading"
+                                                    Variant="Dots"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center" />
+                                <Image x:Name="PreviewDialogImage" Stretch="UniformToFill" />
+                            </Grid>
+                        </Border>
+                        <Border BorderThickness="1"
+                                BorderBrush="{ThemeResource DaisySecondaryBrush}"
+                                CornerRadius="12"
+                                IsHitTestVisible="False"
+                                Visibility="{Binding Visibility, ElementName=PreviewDialogLoading}" />
+                    </Grid>
                     <TextBlock x:Name="PreviewDescription"
                                Grid.Row="2"
                                Opacity="0.8"
                                TextWrapping="Wrap"
                                Foreground="{ThemeResource DaisyBaseContentBrush}"
                                daisy:FlowerySizeManager.ResponsiveFont="Primary" />
-                    <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                    <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="8">
+                        <daisy:DaisyCheckBox x:Name="PreviewSlideshowCheck"
+                                             Variant="Primary"
+                                             Content="{Binding [Tab_Slideshow]}"
+                                             VerticalAlignment="Center"
+                                             AutomationProperties.Name="{Binding [Tab_Slideshow]}" />
+                        <daisy:DaisyNumericUpDown x:Name="PreviewSlideshowSeconds"
+                                                Grid.Column="1"
+                                                Width="100"
+                                                MaxDecimalPlaces="0"
+                                                MaxIntegerDigits="3"
+                                                FormatString="0"
+                                                Suffix="s"
+                                                Size="Small"
+                                                VerticalAlignment="Center"
+                                                daisy:FlowerySizeManager.IgnoreGlobalSize="True"
+                                                AutomationProperties.Name="{Binding [Slide_Seconds]}"
+                                                ToolTipService.ToolTip="{Binding [Slide_Seconds]}" />
                         <TextBlock x:Name="PreviewInfo"
+                                   Grid.Column="2"
                                    Opacity="0.6"
                                    VerticalAlignment="Center"
                                    TextTrimming="CharacterEllipsis"
                                    Foreground="{ThemeResource DaisyBaseContentBrush}"
                                    daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
                         <daisy:DaisyButton x:Name="PreviewFullScreenButton"
-                                           Grid.Column="1"
+                                           Grid.Column="3"
                                            Variant="Primary"
                                            Shape="Square"
                                            IconData="{StaticResource AppIconFullScreen}"
                                            Click="PreviewFullScreen_Click" />
                         <daisy:DaisyButton x:Name="PreviewShuffleButton"
-                                           Grid.Column="2"
+                                           Grid.Column="4"
                                            Variant="Primary"
                                            IconData="{StaticResource AppIconShuffle}"
                                            Content="{Binding [Preview_Another]}"

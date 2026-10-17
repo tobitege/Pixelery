@@ -34,6 +34,11 @@ try
         case "sheet":
             DevCommands.Sheet(rest.Length > 0 ? rest[0] : "sheets", rest.Length > 1 ? int.Parse(rest[1]) : 1, rest.Length > 2 ? rest[2] : null);
             return 0;
+        case "bake-previews":
+            if (rest.Length != 1)
+                throw new UsageException("bake-previews expects an output folder.");
+            DevCommands.BakePreviews(rest[0]);
+            return 0;
         case "bench":
             DevCommands.Bench(rest.Length > 0 ? int.Parse(rest[0]) : 1920, rest.Length > 1 ? int.Parse(rest[1]) : 1080, rest.Length > 2 ? int.Parse(rest[2]) : 3);
             return 0;
@@ -193,6 +198,15 @@ internal static class Help
                       pixelery setscreensaver -s geometric --activate
                     """);
                 break;
+            case "bake-previews":
+                Console.WriteLine("""
+                    pixelery bake-previews <folder>
+
+                    Writes one deterministic 600x375 JPEG per style for the app's cards and preview lists.
+                    From the repository root: pixelery bake-previews Pixelery/Assets/Previews
+                    Existing preview files are replaced. Run again when styles change, then build the app.
+                    """);
+                break;
             case "list" or "ls":
                 Console.WriteLine("""
                     pixelery list <styles|palettes|sizes|placeholders>
@@ -216,6 +230,7 @@ internal static class Help
                       setscreensaver   Render one image and show it in the Windows Photos screen saver
                       list             List styles, palettes, sizes or file name placeholders
                       sheet            Developer: contact sheets per category (sheet <folder> [seed] [styleId])
+                      bake-previews    Developer: bundled style previews (bake-previews <folder>)
                       bench            Developer: render time per style (bench [width] [height] [n])
                       version          Show the version
 
@@ -275,6 +290,31 @@ internal static class ListCommand
 /// <summary>Developer helpers used to check styles visually and measure them.</summary>
 internal static class DevCommands
 {
+    public static void BakePreviews(string folder)
+    {
+        Directory.CreateDirectory(folder);
+        var settings = new GeneratorSettings();
+        foreach (var style in StyleCatalog.All)
+        {
+            // A stable per-style seed keeps existing images unchanged when the catalog grows.
+            var rng = new Random(ImageGenerator.ParseSeed($"preview:{style.Id}"));
+            var (image, _) = ImageGenerator.Render(style, rng.Next(),
+                settings.Palettes[rng.Next(settings.Palettes.Count)],
+                settings.Tones[rng.Next(settings.Tones.Count)], DetailLevel.High,
+                600, 375, settings.Grain, settings.Vignette);
+            using (image)
+            {
+                var bytes = Pixelery.Core.Output.ImageEncoder.Encode(image, OutputFormat.Jpeg, 90, null);
+                var path = Path.Combine(folder, $"{style.Id}.jpg");
+                File.WriteAllBytes(path, bytes);
+                using var check = SKBitmap.Decode(path);
+                if (check is not { Width: 600, Height: 375 })
+                    throw new IOException($"Invalid preview: {path}");
+                Console.WriteLine(path);
+            }
+        }
+    }
+
     public static void Sheet(string folder, int seed, string? only)
     {
         Directory.CreateDirectory(folder);

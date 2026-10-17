@@ -2,6 +2,7 @@
     x:Class="Pixelery.Views.GeneratorView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Pixelery.Views"
     xmlns:daisy="using:Flowery.Controls">
 
     <Grid x:Name="RootGrid" ColumnDefinitions="*,Auto" DataContext="{x:Bind Localization, Mode=OneWay}">
@@ -19,11 +20,16 @@
                       MinHeight="176"
                       Background="{ThemeResource DaisyBase200Brush}"
                       BorderBrush="{ThemeResource DaisyBase300Brush}">
-                    <Image x:Name="HeroImage"
-                           Stretch="UniformToFill"
-                           HorizontalAlignment="Right"
-                           VerticalAlignment="Stretch"
-                           Opacity="0" />
+                    <!-- A brush has no intrinsic image size and cannot enlarge the auto-sized header. -->
+                    <Rectangle x:Name="HeroImage"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Stretch"
+                               IsHitTestVisible="False"
+                               Opacity="0">
+                        <Rectangle.Fill>
+                            <ImageBrush x:Name="HeroImageBrush" Stretch="UniformToFill" />
+                        </Rectangle.Fill>
+                    </Rectangle>
                     <Rectangle x:Name="HeroFade" IsHitTestVisible="False" />
                     <Grid ColumnDefinitions="*,Auto" Padding="32,26">
                         <StackPanel VerticalAlignment="Center" Spacing="6" MaxWidth="600" HorizontalAlignment="Left">
@@ -86,7 +92,7 @@
                 <!-- Tab pages: moved into SideTabs in code (DaisyTabs would otherwise keep them parented twice). -->
                 <Grid x:Name="TabPages" Visibility="Collapsed">
                     <ScrollViewer x:Name="GeneratePage" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled" DataContext="{x:Bind Localization, Mode=OneWay}">
-                        <StackPanel x:Name="RunStack" Padding="6,14,6,8" Spacing="16">
+                        <StackPanel x:Name="RunStack" Padding="6,14,22,8" Spacing="16">
                             <StackPanel x:Name="SetupPanel" Spacing="16">
                                 <StackPanel Spacing="6">
                                     <TextBlock Text="{Binding [Run_Count]}" Style="{StaticResource AppCaptionTextStyle}" daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
@@ -159,27 +165,32 @@
                                 </Border>
                                 <TextBlock x:Name="PreviewCaption"
                                            Opacity="0.65"
-                                           TextTrimming="CharacterEllipsis"
+                                           TextTrimming="None"
+                                           TextWrapping="Wrap"
+                                           IsTextSelectionEnabled="True"
+                                           Foreground="{ThemeResource DaisyBaseContentBrush}"
+                                           daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
+                                <TextBlock x:Name="PreviewDetails"
+                                           Opacity="0.65"
+                                           TextWrapping="Wrap"
                                            Foreground="{ThemeResource DaisyBaseContentBrush}"
                                            daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
 
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <StackPanel Spacing="2">
                                     <TextBlock x:Name="ProgressCount"
                                                FontSize="26"
                                                FontWeight="Bold"
-                                               TextTrimming="CharacterEllipsis"
+                                               TextWrapping="Wrap"
                                                Foreground="{ThemeResource DaisyBaseContentBrush}" />
                                     <TextBlock x:Name="ProgressPercent"
-                                               Grid.Column="1"
                                                Opacity="0.7"
-                                               VerticalAlignment="Bottom"
-                                               Margin="0,0,0,4"
+                                               HorizontalAlignment="Right"
                                                Foreground="{ThemeResource DaisyBaseContentBrush}"
                                                daisy:FlowerySizeManager.ResponsiveFont="Primary" />
-                                </Grid>
+                                </StackPanel>
                                 <daisy:DaisyProgress x:Name="ProgressBar" Variant="Primary" Minimum="0" Maximum="100" />
 
-                                <Grid x:Name="StatsGrid" ColumnDefinitions="*,*" ColumnSpacing="12" RowSpacing="10" />
+                                <local:WrapPanel x:Name="StatsGrid" MinItemWidth="110" HorizontalSpacing="12" VerticalSpacing="10" />
 
                                 <daisy:DaisyAlert x:Name="ResultAlert" Visibility="Collapsed" />
 
@@ -194,7 +205,7 @@
                         </StackPanel>
                     </ScrollViewer>
                     <ScrollViewer x:Name="SlideshowPage" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled" DataContext="{x:Bind Localization, Mode=OneWay}">
-                        <StackPanel x:Name="SlideshowStack" Padding="6,14,6,8" Spacing="16" />
+                        <StackPanel x:Name="SlideshowStack" Padding="6,14,22,8" Spacing="16" />
                     </ScrollViewer>
                 </Grid>
 
