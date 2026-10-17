@@ -1,4 +1,7 @@
 {
+  "Navigation_Home": "Ana sayfa",
+  "Navigation_OutputSettings": "Çıktı ayarlarına git",
+
   "Update_Title": "Güncellemeler",
   "Update_Hint": "İmzalı güncellemeler bu kullanıcı için yüklenir. Ardından Pixelery yeniden başlar. Taşınabilir dosyalar korunur.",
   "Update_Idle": "Yeni sürümü elle denetleyin.",

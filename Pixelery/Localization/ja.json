@@ -1,4 +1,7 @@
 {
+  "Navigation_Home": "ホーム",
+  "Navigation_OutputSettings": "出力設定へ移動",
+
   "Update_Title": "更新",
   "Update_Hint": "署名付きの更新をこのユーザー用にインストールします。その後 Pixelery が再起動します。ポータブル版のファイルは保持されます。",
   "Update_Idle": "新しいバージョンを手動で確認します。",

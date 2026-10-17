@@ -6,10 +6,27 @@
     xmlns:localization="using:Pixelery.Localization"
     xmlns:daisy="using:Flowery.Controls">
 
-    <Grid x:Name="RootGrid" x:DataType="localization:AppLocalization" ColumnDefinitions="*,Auto" DataContext="{x:Bind Localization, Mode=OneWay}">
+    <Grid x:Name="RootGrid" x:DataType="localization:AppLocalization" ColumnDefinitions="Auto,*,Auto" DataContext="{x:Bind Localization, Mode=OneWay}">
+
+        <Border Background="{ThemeResource DaisyBase200Brush}"
+                BorderBrush="{ThemeResource DaisyBase300Brush}"
+                BorderThickness="0,0,1,0">
+            <StackPanel x:Name="SectionNavigation" Padding="6,8" Spacing="6">
+                <daisy:DaisyButton x:Name="HomeButton"
+                                   AutomationProperties.AutomationId="Navigate_Home"
+                                   Variant="Ghost"
+                                   Shape="Square"
+                                   Size="Medium"
+                                   daisy:FlowerySizeManager.IgnoreGlobalSize="True"
+                                   IconSymbol="Home"
+                                   Click="HomeButton_Click" />
+            </StackPanel>
+        </Border>
 
         <!-- Configuration -->
         <ScrollViewer x:Name="ConfigScroller"
+                      Grid.Column="1"
+                      AutomationProperties.AutomationId="ConfigScroller"
                       HorizontalScrollMode="Disabled"
                       HorizontalScrollBarVisibility="Disabled">
             <StackPanel x:Name="ConfigStack" Padding="8,8,28,32" Spacing="20">
@@ -72,17 +89,25 @@
                                Foreground="{ThemeResource DaisyBaseContentBrush}"
                                daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
                     <HyperlinkButton x:Name="FooterLink"
+                                     AutomationProperties.AutomationId="FooterGitHubLink"
+                                     AutomationProperties.Name="GitHub"
                                      Padding="4,2"
                                      VerticalAlignment="Center"
-                                     Content="GitHub"
-                                     Click="FooterLink_Click" />
+                                     Click="FooterLink_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Viewbox Width="16" Height="16" VerticalAlignment="Center">
+                                <Path x:Name="FooterGitHubIcon" Fill="{ThemeResource DaisyBaseContentBrush}" />
+                            </Viewbox>
+                            <TextBlock Text="GitHub" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </HyperlinkButton>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
 
         <!-- Side panel: tabs for generating files and for the slideshow, one large start button below -->
         <Border x:Name="RunPanel"
-                Grid.Column="1"
+                Grid.Column="2"
                 Width="{StaticResource AppRunPanelWidth}"
                 Background="{ThemeResource DaisyBase200Brush}"
                 BorderBrush="{ThemeResource DaisyBase300Brush}"
@@ -94,6 +119,29 @@
                 <Grid x:Name="TabPages" Visibility="Collapsed">
                     <ScrollViewer x:Name="GeneratePage" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled" DataContext="{x:Bind Localization, Mode=OneWay}">
                         <StackPanel x:Name="RunStack" Padding="6,14,22,8" Spacing="16">
+                            <StackPanel Spacing="6">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                    <TextBlock Text="{Binding [Output_Folder]}"
+                                               Style="{StaticResource AppCaptionTextStyle}"
+                                               TextWrapping="Wrap"
+                                               VerticalAlignment="Center"
+                                               daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
+                                    <daisy:DaisyButton x:Name="GoToOutputButton"
+                                                       Grid.Column="1"
+                                                       AutomationProperties.AutomationId="Navigate_OutputSettings"
+                                                       Variant="Ghost"
+                                                       Shape="Square"
+                                                       Size="Small"
+                                                       IconSymbol="Go"
+                                                       Click="GoToOutputButton_Click" />
+                                </Grid>
+                                <TextBlock x:Name="OutputFolderSummary"
+                                           AutomationProperties.AutomationId="OutputFolderSummary"
+                                           TextWrapping="Wrap"
+                                           IsTextSelectionEnabled="True"
+                                           Foreground="{ThemeResource DaisyBaseContentBrush}"
+                                           daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
+                            </StackPanel>
                             <StackPanel x:Name="SetupPanel" Spacing="16">
                                 <StackPanel Spacing="6">
                                     <TextBlock Text="{Binding [Run_Count]}" Style="{StaticResource AppCaptionTextStyle}" daisy:FlowerySizeManager.ResponsiveFont="Secondary" />

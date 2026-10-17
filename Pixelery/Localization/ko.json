@@ -1,4 +1,7 @@
 {
+  "Navigation_Home": "홈",
+  "Navigation_OutputSettings": "출력 설정으로 이동",
+
   "Update_Title": "업데이트",
   "Update_Hint": "서명된 업데이트를 현재 사용자용으로 설치합니다. 설치 후 Pixelery가 다시 시작됩니다. 포터블 파일은 유지됩니다.",
   "Update_Idle": "새 버전을 수동으로 확인합니다.",

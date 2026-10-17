@@ -1,4 +1,7 @@
 {
+  "Navigation_Home": "主页",
+  "Navigation_OutputSettings": "转到输出设置",
+
   "Update_Title": "更新",
   "Update_Hint": "更新经过签名并为当前用户安装。安装后 Pixelery 将重新启动。便携版文件会保留。",
   "Update_Idle": "手动检查新版本。",
