@@ -14,7 +14,8 @@ using static Pixelery.Views.UiHelpers;
 namespace Pixelery.Views
 {
     /// <summary>Exact parameters for one slide, e.g. to open the image of the style preview in full screen.</summary>
-    public sealed record SlideOverride(ArtStyle Style, int Seed, Core.Palettes.PaletteFamily Family, Core.Palettes.BackgroundTone Tone, DetailLevel Detail);
+    public sealed record SlideOverride(ArtStyle Style, int Seed, Core.Palettes.PaletteFamily Family, Core.Palettes.BackgroundTone Tone, DetailLevel Detail,
+        Core.Palettes.PaletteSample? SamplePalette = null);
 
     /// <summary>
     /// Endless slideshow of freshly generated images at window resolution. Nothing is written to disk.
@@ -81,7 +82,7 @@ namespace Pixelery.Views
                 HorizontalAlignment.Center, VerticalAlignment.Top);
             _pausedBadge = Overlay(new TextBlock { Text = L("Slide_Paused"), Foreground = new SolidColorBrush(Colors.White), FontSize = 14, FontWeight = FontWeights.SemiBold },
                 HorizontalAlignment.Right, VerticalAlignment.Top);
-            _pausedBadge.Visibility = Visibility.Collapsed;
+            _pausedBadge.Visibility = _paused ? Visibility.Visible : Visibility.Collapsed;
             _infoPanel.Visibility = Visibility.Collapsed;
 
             _root = new Grid { Background = new SolidColorBrush(Colors.Black), IsTabStop = true, UseSystemFocusVisuals = false };
@@ -134,6 +135,8 @@ namespace Pixelery.Views
 
         private bool IsFullScreen => AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
 
+        public bool IsPaused => _paused;
+
         private static Image NewLayer() => new() { Stretch = Stretch.UniformToFill, Opacity = 0 };
 
         private static Border Overlay(UIElement child, HorizontalAlignment horizontal, VerticalAlignment vertical) => new()
@@ -178,7 +181,7 @@ namespace Pixelery.Views
                 var size = new SizeChoice(width, height, SizeCatalog.RatioLabel(width, height));
                 var recipe = ImageGenerator.CreateRecipe(settings, styles, [size], seed, index + 1, DateTime.Now);
                 if (first != null)
-                    recipe = recipe with { Style = first.Style, Seed = first.Seed, Family = first.Family, Tone = first.Tone, Detail = first.Detail };
+                    recipe = recipe with { Style = first.Style, Seed = first.Seed, Family = first.Family, Tone = first.Tone, Detail = first.Detail, SamplePalette = first.SamplePalette };
                 var (rendered, palette) = ImageGenerator.Render(recipe);
                 var image = rendered;
                 if (settings.Watermark.ShowInSlideshow)

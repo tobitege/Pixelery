@@ -29,8 +29,10 @@ namespace Pixelery.Services
                     var families = followColors && settings.Palettes.Count > 0 ? settings.Palettes : [.. Enum.GetValues<PaletteFamily>()];
                     var tones = followColors && settings.Tones.Count > 0 ? settings.Tones : [.. Enum.GetValues<BackgroundTone>()];
                     var details = settings.Details.Count > 0 ? settings.Details : [DetailLevel.Medium];
+                    var sample = followColors && settings.UsePaletteSet
+                        ? settings.PaletteSet.Entries[rng.Next(settings.PaletteSet.Entries.Count)] : null;
                     var (image, _) = ImageGenerator.Render(style, rng.Next(), families[rng.Next(families.Count)], tones[rng.Next(tones.Count)],
-                        details[rng.Next(details.Count)], width, height, settings.Grain, settings.Vignette);
+                        details[rng.Next(details.Count)], width, height, settings.Grain, settings.Vignette, sample);
                     using (image)
                         return ImageEncoder.Encode(image, OutputFormat.Jpeg, 90, null);
                 }, token).ConfigureAwait(false);

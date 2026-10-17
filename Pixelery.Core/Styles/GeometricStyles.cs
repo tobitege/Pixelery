@@ -147,9 +147,8 @@ public sealed class TruchetStyle : ArtStyle
                         paint.StrokeCap = SKStrokeCap.Butt;
                         for (var k = 1; k <= rings; k++)
                         {
-                            var radius = tile / 2 * (rings == 1 ? 1 : k / (float)rings * 1.6f - 0.3f);
-                            if (radius <= 0)
-                                continue;
+                            // Complementary radii sum to one tile, so every lane meets its neighbor.
+                            var radius = tile * (0.5f + (k - (rings + 1) / 2f) * 0.4f / rings);
                             if (flip)
                             {
                                 ctx.Canvas.DrawArc(new SKRect(x - radius, y - radius, x + radius, y + radius), 0, 90, false, paint);

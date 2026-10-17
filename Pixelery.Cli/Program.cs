@@ -6,7 +6,7 @@ using Pixelery.Core.Palettes;
 using Pixelery.Core.Styles;
 using SkiaSharp;
 
-// pixelery: command line front end for the Pixelery generator (same engine and settings as the app).
+// Pixelery.Cli: command line front end for the Pixelery generator (same engine and settings as the app).
 // Progress bar and typographic characters need UTF-8 in classic consoles.
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 var command = args.Length > 0 ? args[0].ToLowerInvariant() : "help";
@@ -34,11 +34,16 @@ try
         case "sheet":
             DevCommands.Sheet(rest.Length > 0 ? rest[0] : "sheets", rest.Length > 1 ? int.Parse(rest[1]) : 1, rest.Length > 2 ? rest[2] : null);
             return 0;
+        case "bake-previews":
+            if (rest.Length != 1)
+                throw new UsageException("bake-previews expects an output folder.");
+            DevCommands.BakePreviews(rest[0]);
+            return 0;
         case "bench":
             DevCommands.Bench(rest.Length > 0 ? int.Parse(rest[0]) : 1920, rest.Length > 1 ? int.Parse(rest[1]) : 1080, rest.Length > 2 ? int.Parse(rest[2]) : 3);
             return 0;
         case "version" or "--version" or "-v":
-            Console.WriteLine($"pixelery {Pixelery.Core.AppInfo.Version(Assembly.GetExecutingAssembly())} · {Pixelery.Core.AppInfo.Copyright} · {Pixelery.Core.AppInfo.License}");
+            Console.WriteLine($"Pixelery.Cli {Pixelery.Core.AppInfo.Version(Assembly.GetExecutingAssembly())} · {Pixelery.Core.AppInfo.Copyright} · {Pixelery.Core.AppInfo.License}");
             Console.WriteLine(Pixelery.Core.AppInfo.RepositoryUrl);
             return 0;
         case "help" or "--help" or "-h" or "/?":
@@ -120,7 +125,7 @@ internal static class Help
         {
             case "generate" or "gen":
                 Console.WriteLine("""
-                    pixelery generate [options]
+                    Pixelery.Cli.exe generate [options]
 
                     Generates many images with the same engine and settings as the app.
 
@@ -147,27 +152,27 @@ internal static class Help
                     Exit codes: 0 done, 1 failures, 2 invalid options, 130 cancelled (Ctrl+C).
 
                     Examples:
-                      pixelery generate -o D:\TestImages -n 10000 -j max
-                      pixelery generate --app-config -n 500
-                      pixelery generate -s marble,aurora --palettes neon --tones dark --sizes "4K UHD" --formats png
-                      pixelery generate -n 2000 --name "{date:yyyy}\{date:MM}\{style}_{n:00000}" --spread-years 10
+                      Pixelery.Cli.exe generate -o D:\TestImages -n 10000 -j max
+                      Pixelery.Cli.exe generate --app-config -n 500
+                      Pixelery.Cli.exe generate -s marble,aurora --palettes neon --tones dark --sizes "4K UHD" --formats png
+                      Pixelery.Cli.exe generate -n 2000 --name "{date:yyyy}\{date:MM}\{style}_{n:00000}" --spread-years 10
                     """);
                 break;
             case "render":
                 Console.WriteLine("""
-                    pixelery render <file.jpg|png|webp> [options]
+                    Pixelery.Cli.exe render <file.jpg|png|webp> [options]
 
                     Renders one image into a file. Without size options it matches the primary screen.
                     Accepts all style, color and size options of 'generate' plus --seed and --quality.
 
                     """ + GeneratorOptions + """
                     Example:
-                      pixelery render marble.png -s marble --palettes curated --sizes 2560x1440 --seed 42
+                      Pixelery.Cli.exe render marble.png -s marble --palettes curated --sizes 2560x1440 --seed 42
                     """);
                 break;
             case "setbackground" or "set-background" or "wallpaper":
                 Console.WriteLine("""
-                    pixelery setbackground [options]
+                    Pixelery.Cli.exe setbackground [options]
 
                     Renders one image at screen resolution and sets it as the desktop background.
                     Images are saved in %LOCALAPPDATA%\Pixelery\Wallpaper.
@@ -176,12 +181,12 @@ internal static class Help
 
                     """ + GeneratorOptions + """
                     Example:
-                      pixelery setbackground -s aurora,nebula,synthwave --tones dark
+                      Pixelery.Cli.exe setbackground -s aurora,nebula,synthwave --tones dark
                     """);
                 break;
             case "setscreensaver" or "set-screensaver" or "screensaver":
                 Console.WriteLine("""
-                    pixelery setscreensaver [options]
+                    Pixelery.Cli.exe setscreensaver [options]
 
                     Renders one image at screen resolution and makes it the picture of the Windows "Photos"
                     screen saver. Each call creates its own folder under %LOCALAPPDATA%\Pixelery\Screensaver.
@@ -190,12 +195,21 @@ internal static class Help
 
                     """ + GeneratorOptions + """
                     Example:
-                      pixelery setscreensaver -s geometric --activate
+                      Pixelery.Cli.exe setscreensaver -s geometric --activate
+                    """);
+                break;
+            case "bake-previews":
+                Console.WriteLine("""
+                    Pixelery.Cli.exe bake-previews <folder>
+
+                    Writes one deterministic 600x375 JPEG per style for the app's cards and preview lists.
+                    From the repository root: Pixelery.Cli.exe bake-previews Pixelery/Assets/Previews
+                    Existing preview files are replaced. Run again when styles change, then build the app.
                     """);
                 break;
             case "list" or "ls":
                 Console.WriteLine("""
-                    pixelery list <styles|palettes|sizes|placeholders>
+                    Pixelery.Cli.exe list <styles|palettes|sizes|placeholders>
 
                       styles         All styles with id, category and name
                       palettes       Palette families, tones, detail levels and the curated palettes
@@ -205,9 +219,9 @@ internal static class Help
                 break;
             default:
                 Console.WriteLine("""
-                    pixelery - mass generator for abstract images
+                    Pixelery.Cli - mass generator for abstract images
 
-                    Usage: pixelery <command> [options]
+                    Usage: Pixelery.Cli.exe <command> [options]
 
                     Commands:
                       generate         Generate many images (same settings as the app)
@@ -216,10 +230,11 @@ internal static class Help
                       setscreensaver   Render one image and show it in the Windows Photos screen saver
                       list             List styles, palettes, sizes or file name placeholders
                       sheet            Developer: contact sheets per category (sheet <folder> [seed] [styleId])
+                      bake-previews    Developer: bundled style previews (bake-previews <folder>)
                       bench            Developer: render time per style (bench [width] [height] [n])
                       version          Show the version
 
-                    Run 'pixelery <command> --help' for the options of a command.
+                    Run 'Pixelery.Cli.exe <command> --help' for the options of a command.
                     """);
                 Console.WriteLine($"{Pixelery.Core.AppInfo.Copyright} · {Pixelery.Core.AppInfo.License} · {Pixelery.Core.AppInfo.RepositoryUrl}");
                 break;
@@ -275,6 +290,31 @@ internal static class ListCommand
 /// <summary>Developer helpers used to check styles visually and measure them.</summary>
 internal static class DevCommands
 {
+    public static void BakePreviews(string folder)
+    {
+        Directory.CreateDirectory(folder);
+        var settings = new GeneratorSettings();
+        foreach (var style in StyleCatalog.All)
+        {
+            // A stable per-style seed keeps existing images unchanged when the catalog grows.
+            var rng = new Random(ImageGenerator.ParseSeed($"preview:{style.Id}"));
+            var (image, _) = ImageGenerator.Render(style, rng.Next(),
+                settings.Palettes[rng.Next(settings.Palettes.Count)],
+                settings.Tones[rng.Next(settings.Tones.Count)], DetailLevel.High,
+                600, 375, settings.Grain, settings.Vignette);
+            using (image)
+            {
+                var bytes = Pixelery.Core.Output.ImageEncoder.Encode(image, OutputFormat.Jpeg, 90, null);
+                var path = Path.Combine(folder, $"{style.Id}.jpg");
+                File.WriteAllBytes(path, bytes);
+                using var check = SKBitmap.Decode(path);
+                if (check is not { Width: 600, Height: 375 })
+                    throw new IOException($"Invalid preview: {path}");
+                Console.WriteLine(path);
+            }
+        }
+    }
+
     public static void Sheet(string folder, int seed, string? only)
     {
         Directory.CreateDirectory(folder);

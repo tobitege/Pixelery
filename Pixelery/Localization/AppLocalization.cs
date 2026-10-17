@@ -10,7 +10,8 @@ namespace Pixelery.Localization
     /// Mirrors the Gallery localization pattern: bind with {Binding [Key]} and DataContext = Localization.
     /// </summary>
     [Microsoft.UI.Xaml.Data.Bindable]
-    public class AppLocalization : INotifyPropertyChanged
+    [WinRT.GeneratedBindableCustomProperty]
+    public partial class AppLocalization : INotifyPropertyChanged
     {
         private static string _currentCultureName = "en";
         private static readonly Dictionary<string, Dictionary<string, string>> _translations = [];

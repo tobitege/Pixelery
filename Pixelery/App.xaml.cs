@@ -40,6 +40,7 @@ namespace Pixelery
             DaisyResourceLookup.EnsureTokens();
 
             AppSettings.Initialize(GetStateDirectory());
+            Pixelery.Updates.UpdateDownload.CleanupAbandoned(AppSettings.StateDirectory);
 
             // Ensure the localization registers its resolver early.
             _ = AppLocalization.Instance;
@@ -58,6 +59,12 @@ namespace Pixelery
             ApplyPersistedSettings();
 
             _window.Activate();
+#if DEBUG
+            WinUI.Diagnostics.Cdp.CdpServer.EnsureInitialized();
+            WinUI.Diagnostics.Cdp.CdpServer.Register(_window, "Pixelery");
+            WinUI.Diagnostics.Cdp.CdpServer.Start(9225);
+            _window.Closed += (_, _) => WinUI.Diagnostics.Cdp.CdpServer.Stop();
+#endif
         }
 
         private static void ApplyPersistedSettings()

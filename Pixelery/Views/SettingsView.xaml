@@ -2,9 +2,10 @@
     x:Class="Pixelery.Views.SettingsView"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:localization="using:Pixelery.Localization"
     xmlns:daisy="using:Flowery.Controls">
 
-    <ScrollViewer x:Name="RootScroller" Padding="28,18,28,28" DataContext="{x:Bind Localization, Mode=OneWay}">
+    <ScrollViewer x:Name="RootScroller" x:DataType="localization:AppLocalization" Padding="28,18,28,28" DataContext="{x:Bind Localization, Mode=OneWay}">
         <StackPanel x:Name="PageStack" MaxWidth="860" HorizontalAlignment="Stretch" Spacing="16">
 
             <!-- Appearance -->
@@ -42,6 +43,21 @@
                 <StackPanel Spacing="8">
                     <TextBlock Text="{Binding [Settings_Shortcuts]}" Style="{StaticResource AppSectionHeaderStyle}" Margin="0,0,0,6" daisy:FlowerySizeManager.ResponsiveFont="SectionHeader" />
                     <Grid x:Name="ShortcutsGrid" ColumnSpacing="16" RowSpacing="8" />
+                </StackPanel>
+            </Border>
+
+            <!-- Updates -->
+            <Border Style="{StaticResource AppSectionStyle}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="{Binding [Update_Title]}" Style="{StaticResource AppSectionHeaderStyle}" daisy:FlowerySizeManager.ResponsiveFont="SectionHeader" />
+                    <TextBlock Text="{Binding [Update_Hint]}" TextWrapping="Wrap" Style="{StaticResource AppLabelStyle}" daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
+                    <TextBlock x:Name="UpdateStatus" TextWrapping="Wrap" Style="{StaticResource AppLabelStyle}" AutomationProperties.LiveSetting="Polite" daisy:FlowerySizeManager.ResponsiveFont="Primary" />
+                    <ProgressBar x:Name="UpdateProgress" Visibility="Collapsed" Minimum="0" Maximum="100" />
+                    <local:WrapPanel xmlns:local="using:Pixelery.Views" HorizontalSpacing="8" VerticalSpacing="8">
+                        <daisy:DaisyButton x:Name="UpdateCheckButton" AutomationProperties.AutomationId="UpdateCheck" Content="{Binding [Update_Check]}" Variant="Primary" Click="UpdateCheck_Click" />
+                        <daisy:DaisyButton x:Name="UpdateInstallButton" AutomationProperties.AutomationId="UpdateInstall" Visibility="Collapsed" Variant="Primary" Click="UpdateInstall_Click" />
+                        <daisy:DaisyButton x:Name="UpdateCancelButton" Content="{Binding [App_Cancel]}" Visibility="Collapsed" Click="UpdateCancel_Click" />
+                    </local:WrapPanel>
                 </StackPanel>
             </Border>
 

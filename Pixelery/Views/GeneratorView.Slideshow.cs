@@ -59,7 +59,7 @@ namespace Pixelery.Views
             }, 140);
             var secondsLabel = Text(string.Empty, ResponsiveFontTier.Primary, 0.8);
             Localize(() => secondsLabel.Text = L("Slide_Seconds"));
-            var intervalRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
+            var intervalRow = new WrapPanel { HorizontalSpacing = 10, VerticalSpacing = 8 };
             intervalRow.Children.Add(seconds);
             intervalRow.Children.Add(secondsLabel);
             SlideshowStack.Children.Add(Block("Slide_Interval", intervalRow));
@@ -159,7 +159,9 @@ namespace Pixelery.Views
             var problems = SlideshowProblems();
             _slideshowSummary.Text = problems.Count > 0
                 ? string.Join(Environment.NewLine, problems.Select(L))
-                : AppLocalization.Format("Slide_Uses", Settings.Styles.Count(id => StyleCatalog.Find(id) != null), Settings.Palettes.Count, Settings.Tones.Count);
+                : Settings.UsePaletteSet
+                    ? AppLocalization.Format("Colors_SetSummary", Settings.PaletteSet.Entries.Count)
+                    : AppLocalization.Format("Slide_Uses", Settings.Styles.Count(id => StyleCatalog.Find(id) != null), Settings.Palettes.Count, Settings.Tones.Count);
         }
 
         private void StartButton_Click(object sender, RoutedEventArgs e) => StartFromButton();

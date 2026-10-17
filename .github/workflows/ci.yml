@@ -1,0 +1,118 @@
+name: Windows CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Build, test, publish, and smoke test
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      DOTNET_NOLOGO: 'true'
+      DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: '10.0.402'
+
+      - name: Build Debug app with CDP
+        run: dotnet build Pixelery/Pixelery.csproj -c Debug -p:Platform=x64 -nologo
+
+      - name: Test palette preview transitions in the Debug app
+        run: ./tools/Test-PalettePreviews.ps1 -AppPath bin/Debug/Pixelery/net10.0-windows10.0.19041/win-x64/Pixelery.exe -OutputDirectory "$env:RUNNER_TEMP/Pixelery/Tests/PalettePreviews"
+
+      - name: Restore Release solution
+        run: dotnet restore Pixelery.slnx -p:Configuration=Release
+
+      - name: Build solution
+        run: dotnet build Pixelery.slnx -c Release --no-restore -nologo
+
+      - name: Run Core tests
+        env:
+          PIXELERY_TEST_ROOT: ${{ runner.temp }}/Pixelery/Tests
+        run: dotnet test Pixelery.Core.Tests/Pixelery.Core.Tests.csproj -c Release --no-build --no-restore --logger "trx;LogFileName=core.trx" --results-directory artifacts/test-results
+
+      - name: Restore release signing tool
+        run: dotnet tool restore
+
+      - name: Publish Windows app
+        run: dotnet publish Pixelery/Pixelery.csproj -c Release -r win-x64 -p:Platform=x64 -p:WindowsPackageType=None -o artifacts/publish/app -nologo
+
+      - name: Publish Windows CLI
+        run: dotnet publish Pixelery.Cli/Pixelery.Cli.csproj -c Release -r win-x64 -o artifacts/publish/cli -nologo
+
+      - name: Verify Native AOT outputs
+        run: |
+          ./tools/Test-NativePublish.ps1 -Directory artifacts/publish/app -Executable Pixelery.exe
+          ./tools/Test-NativePublish.ps1 -Directory artifacts/publish/cli -Executable Pixelery.Cli.exe
+
+      - name: Run published CLI smoke test
+        env:
+          PIXELERY_STATE_ROOT: ${{ runner.temp }}/Pixelery/State
+        run: ./tools/Test-CliSmoke.ps1 -CliPath artifacts/publish/cli/Pixelery.Cli.exe -OutputDirectory "$env:RUNNER_TEMP/Pixelery/Tests/Smoke"
+
+      - name: Package Native AOT applications
+        run: |
+          ./tools/New-ReleaseArchive.ps1 -PublishDirectory artifacts/publish/app -Executable Pixelery.exe -ArchivePath artifacts/packages/Pixelery-Windows-x64.zip
+          ./tools/New-ReleaseArchive.ps1 -PublishDirectory artifacts/publish/cli -Executable Pixelery.Cli.exe -ArchivePath artifacts/packages/Pixelery.Cli-Windows-x64.zip
+
+      - name: Build NSIS installer
+        run: |
+          $nsis = ./tools/Get-Nsis.ps1 -Directory "$env:RUNNER_TEMP/Pixelery/Tools"
+          ./tools/New-Installer.ps1 -AppDirectory artifacts/publish/app -CliDirectory artifacts/publish/cli -OutputDirectory artifacts/packages -NsisPath $nsis
+
+      - name: Test per-user installer and shared application directory
+        run: |
+          $installer = Get-Item artifacts/packages/Pixelery-Setup-*-x64.exe
+          ./tools/Test-Installer.ps1 -InstallerPath $installer.FullName -AppDirectory artifacts/publish/app -CliDirectory artifacts/publish/cli -OutputDirectory "$env:RUNNER_TEMP/Pixelery/Tests/Installer"
+
+      - name: Test signed update feed with disposable keys
+        run: |
+          $keys = "$env:RUNNER_TEMP/Pixelery/Tests/UpdateKeys"
+          dotnet tool run netsparkle-generate-appcast --generate-keys --key-path $keys
+          if ($LASTEXITCODE -ne 0) { throw 'Test key generation failed.' }
+          $installer = Get-Item artifacts/packages/Pixelery-Setup-*-x64.exe
+          [xml]$props = Get-Content Directory.Build.props -Raw
+          ./tools/New-UpdateFeed.ps1 -InstallerPath $installer.FullName -Version $props.Project.PropertyGroup.Version.InnerText -OutputDirectory "$env:RUNNER_TEMP/Pixelery/Tests/UpdateFeed" -KeyDirectory $keys -PublicKeyPath "$keys/NetSparkle_Ed25519.pub"
+
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: test-results
+          path: |
+            artifacts/test-results/*.trx
+            ${{ runner.temp }}/Pixelery/Tests/Installer/*/results.txt
+            ${{ runner.temp }}/Pixelery/Tests/PalettePreviews/*/results.txt
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload Windows packages
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: Pixelery-Windows-x64-CI
+          path: |
+            artifacts/packages/*.zip
+            artifacts/packages/Pixelery-Setup-*-x64.exe
+          if-no-files-found: error
+          retention-days: 7

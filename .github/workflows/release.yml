@@ -1,6 +1,6 @@
 name: Pixelery Release
 
-# MANUAL TRIGGER ONLY - Creates a GitHub release with the self-contained Pixelery.exe
+# MANUAL TRIGGER ONLY - Creates a GitHub release with Native AOT application archives
 # Go to Actions → Pixelery Release → Run workflow → Enter version (e.g., 0.1.0)
 
 on:
@@ -10,14 +10,6 @@ on:
         description: 'Version to release (e.g., 0.1.0) - without "v" prefix'
         required: true
         type: string
-      sdk_version:
-        description: '.NET SDK used for the native Windows build'
-        required: true
-        type: choice
-        options:
-          - '10.0.402'
-          - '11.0.100-rc.2.26504.105'
-        default: '10.0.402'
       skip_tag:
         description: 'Skip tag creation (assumes you already pushed the tag manually)'
         required: false
@@ -62,17 +54,14 @@ jobs:
 
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: |
-            10.0.402
-            ${{ inputs.sdk_version }}
+          dotnet-version: '10.0.402'
 
       - name: Build solution
         run: dotnet build Pixelery.slnx -c Release -nologo
 
-      - name: Publish Pixelery (single self-contained exe)
+      - name: Publish Pixelery (Native AOT)
         run: |
           $version = '${{ needs.validate.outputs.version }}'
-          # Single file, self-contained and compression are configured in Pixelery.csproj.
           dotnet publish Pixelery/Pixelery.csproj `
             -c Release `
             -r win-x64 `
@@ -85,7 +74,7 @@ jobs:
             -nologo
           if ($LASTEXITCODE -ne 0) { throw 'Publish failed.' }
 
-      - name: Publish pixelery CLI (single self-contained exe)
+      - name: Publish Pixelery CLI (Native AOT)
         run: |
           $version = '${{ needs.validate.outputs.version }}'
           dotnet publish Pixelery.Cli/Pixelery.Cli.csproj `
@@ -98,24 +87,51 @@ jobs:
             -nologo
           if ($LASTEXITCODE -ne 0) { throw 'CLI publish failed.' }
 
-      - name: Collect release assets
+      - name: Verify Native AOT outputs
         run: |
-          foreach ($folder in './publish', './publish-cli') {
-            $files = Get-ChildItem $folder -File
-            $files | Format-Table Name, Length
-            if ($files.Count -ne 1) { throw "Expected a single file in $folder, found $($files.Count)." }
-          }
-          if (-not (Test-Path ./publish/Pixelery.exe)) { throw 'Pixelery.exe missing in publish output.' }
-          if (-not (Test-Path ./publish-cli/pixelery.exe)) { throw 'pixelery.exe missing in CLI publish output.' }
-          New-Item -ItemType Directory -Force ./final | Out-Null
-          Copy-Item ./publish/Pixelery.exe ./final/Pixelery-Windows-x64.exe
-          Copy-Item ./publish-cli/pixelery.exe ./final/pixelery-cli-Windows-x64.exe
+          ./tools/Test-NativePublish.ps1 -Directory publish -Executable Pixelery.exe
+          ./tools/Test-NativePublish.ps1 -Directory publish-cli -Executable Pixelery.Cli.exe
+
+      - name: Run published CLI smoke test
+        env:
+          PIXELERY_STATE_ROOT: ${{ runner.temp }}/Pixelery/State
+        run: ./tools/Test-CliSmoke.ps1 -CliPath publish-cli/Pixelery.Cli.exe -OutputDirectory "$env:RUNNER_TEMP/Pixelery/Tests/Smoke" -ExpectedVersion '${{ needs.validate.outputs.version }}'
+
+      - name: Package release assets
+        run: |
+          ./tools/New-ReleaseArchive.ps1 -PublishDirectory publish -Executable Pixelery.exe -ArchivePath final/Pixelery-Windows-x64.zip
+          ./tools/New-ReleaseArchive.ps1 -PublishDirectory publish-cli -Executable Pixelery.Cli.exe -ArchivePath final/Pixelery.Cli-Windows-x64.zip
+
+      - name: Build NSIS installer
+        run: |
+          $nsis = ./tools/Get-Nsis.ps1 -Directory "$env:RUNNER_TEMP/Pixelery/Tools"
+          ./tools/New-Installer.ps1 -AppDirectory publish -CliDirectory publish-cli -OutputDirectory final -NsisPath $nsis -Version '${{ needs.validate.outputs.version }}'
+
+      - name: Test per-user installer and shared application directory
+        run: ./tools/Test-Installer.ps1 -InstallerPath 'final/Pixelery-Setup-${{ needs.validate.outputs.version }}-x64.exe' -AppDirectory publish -CliDirectory publish-cli -OutputDirectory "$env:RUNNER_TEMP/Pixelery/Tests/Installer" -ExpectedVersion '${{ needs.validate.outputs.version }}'
+
+      - name: Sign update feed and installer
+        env:
+          UPDATE_PRIVATE_KEY: ${{ secrets.PIXELERY_UPDATE_PRIVATE_KEY }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:UPDATE_PRIVATE_KEY)) { throw 'PIXELERY_UPDATE_PRIVATE_KEY is required for release signing.' }
+          dotnet tool restore
+          if ($LASTEXITCODE -ne 0) { throw 'Signing tool restore failed.' }
+          $keys = "$env:RUNNER_TEMP/Pixelery/ReleaseSigning"
+          New-Item -ItemType Directory -Path $keys -Force | Out-Null
+          [IO.File]::WriteAllText("$keys/NetSparkle_Ed25519.priv", $env:UPDATE_PRIVATE_KEY.Trim())
+          Copy-Item -LiteralPath Pixelery.Updates/UpdatePublicKey.txt -Destination "$keys/NetSparkle_Ed25519.pub"
+          ./tools/New-UpdateFeed.ps1 -InstallerPath 'final/Pixelery-Setup-${{ needs.validate.outputs.version }}-x64.exe' -Version '${{ needs.validate.outputs.version }}' -OutputDirectory final -KeyDirectory $keys
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: Pixelery-Windows-x64
-          path: ./final/*.exe
+          path: |
+            ./final/*.zip
+            ./final/Pixelery-Setup-*-x64.exe
+            ./final/appcast.xml
+            ./final/appcast.xml.signature
           if-no-files-found: error
 
   publish:
@@ -135,7 +151,9 @@ jobs:
       - name: Collect artifacts
         run: |
           mkdir -p ./final
-          find ./release-artifacts -name "*.exe" -exec cp {} ./final/ \;
+          find ./release-artifacts -name "*.zip" -exec cp {} ./final/ \;
+          find ./release-artifacts -name "Pixelery-Setup-*-x64.exe" -exec cp {} ./final/ \;
+          find ./release-artifacts -name "appcast.xml*" -exec cp {} ./final/ \;
           echo "=== Release artifacts ==="
           ls -la ./final/
 
@@ -188,12 +206,13 @@ jobs:
 
           ## 🎨 Download
 
-          Single self-contained executables (no .NET or Windows App SDK install required). Just download and run.
+          Native AOT applications (no .NET or Windows App SDK install required). The per-user installer includes the app and CLI in one directory. Alternatively, extract a portable ZIP and keep all its files together.
 
           | Asset | Description |
           |-------|-------------|
-          | `Pixelery-Windows-x64.exe` | App (Windows x64) |
-          | `pixelery-cli-Windows-x64.exe` | Command line tool: generate, render, setbackground, setscreensaver (run with `--help`) |
+          | `Pixelery-Setup-${{ needs.validate.outputs.version }}-x64.exe` | Per-user installer including the app and command line tool |
+          | `Pixelery-Windows-x64.zip` | App (Windows x64); run `Pixelery.exe` |
+          | `Pixelery.Cli-Windows-x64.zip` | Command line tool; run `Pixelery.Cli.exe --help` |
           APP
 
           echo "=== Release Notes ==="

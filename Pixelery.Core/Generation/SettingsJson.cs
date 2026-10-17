@@ -13,6 +13,9 @@ public static class SettingsJson
     {
         var settings = JsonSerializer.Deserialize(json, GeneratorJsonContext.Default.GeneratorSettings)
             ?? throw new JsonException("The settings file is empty.");
+        if (settings.PaletteSet?.Entries == null || (settings.PaletteSet.Entries.Count != 0 && !settings.PaletteSet.IsValid())
+            || (settings.UsePaletteSet && !settings.PaletteSet.IsValid()))
+            throw new JsonException("Invalid palette set.");
         settings.SelectNewStyles();
         return settings;
     }

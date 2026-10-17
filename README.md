@@ -12,7 +12,8 @@ Built with [Flowery.WinUI](https://github.com/tobitege/Flowery.WinUI) (NuGet) an
 | --- | --- |
 | `Pixelery` | WinUI 3 app (Daisy controls, themes, sizes, 12 languages) |
 | `Pixelery.Core` | Generator engine without UI dependencies: styles, palettes, sizes, file name schema, watermarks, encoding, parallel runner |
-| `Pixelery.Cli` | `pixelery` command line tool: generation, single images, desktop background, screen saver |
+| `Pixelery.Cli` | `Pixelery.Cli.exe` command line tool: generation, single images, desktop background, screen saver |
+| `Pixelery.Core.Tests` | Tests for palette files, settings, safe file names, and Truchet rendering |
 
 ## Features at a glance
 
@@ -41,7 +42,7 @@ Every style derives all decisions from the image seed, so the same seed gives th
 | Retro & digital | Synthwave, Glitch, Pixel Mosaic, Neon Glow |
 | Optical illusions | Op Art, Rotating Snakes, Café Wall, Scintillating Grid (and Hermann grid), Fraser Spiral, Zöllner, Ouchi, Kanizsa, Impossible Figures (Penrose tribars) |
 
-Style cards in the app show live previews with the selected colors; the eye button opens a large preview with a full screen view (→ shows more variants, Space runs a slideshow of that style).
+Cards and the preview list use bundled thumbnails at startup. You can regenerate them with the selected colors. The eye button opens a large preview with a full screen view (→ shows more variants, Space runs a slideshow of that style).
 
 ## Colors and finish
 
@@ -124,19 +125,21 @@ The **Slideshow** tab shows newly generated images one after another with the se
 
 ## Command line
 
-`pixelery` (project `Pixelery.Cli`) drives the same engine with the same settings as the app:
+`Pixelery.Cli.exe` (project `Pixelery.Cli`) drives the same engine with the same settings as the app:
+
+In PowerShell, run it as `.\Pixelery.Cli.exe` from the executable's directory.
 
 ```bash
-pixelery generate -o D:\TestImages -n 10000 -j max               # bulk generation with progress and Ctrl+C
-pixelery generate --app-config -n 500                            # reuse the settings last used in the app
-pixelery generate -s marble,aurora --palettes neon --tones dark --sizes "4K UHD" --formats png
-pixelery generate -c my.json --dry-run                           # plan and example file names only
-pixelery generate -n 500 --watermark-text "© {now:yyyy} Your Name" --watermark-position random
-pixelery render marble.png -s marble --seed 42                   # one image into a file
-pixelery setbackground -s aurora,nebula --tones dark             # one image at screen size as desktop background
-pixelery setscreensaver -s geometric --activate                  # one image for the Windows Photos screen saver
-pixelery list styles|palettes|sizes|placeholders
-pixelery <command> --help
+Pixelery.Cli.exe generate -o D:\TestImages -n 10000 -j max               # bulk generation with progress and Ctrl+C
+Pixelery.Cli.exe generate --app-config -n 500                            # reuse the settings last used in the app
+Pixelery.Cli.exe generate -s marble,aurora --palettes neon --tones dark --sizes "4K UHD" --formats png
+Pixelery.Cli.exe generate -c my.json --dry-run                           # plan and example file names only
+Pixelery.Cli.exe generate -n 500 --watermark-text "© {now:yyyy} Your Name" --watermark-position random
+Pixelery.Cli.exe render marble.png -s marble --seed 42                   # one image into a file
+Pixelery.Cli.exe setbackground -s aurora,nebula --tones dark             # one image at screen size as desktop background
+Pixelery.Cli.exe setscreensaver -s geometric --activate                  # one image for the Windows Photos screen saver
+Pixelery.Cli.exe list styles|palettes|sizes|placeholders
+Pixelery.Cli.exe <command> --help
 ```
 
 | Area | Options |
@@ -152,7 +155,7 @@ Switches can be negated with `--no-…`. Exit codes: 0 done, 1 failures, 2 inval
 
 `render`, `setbackground` and `setscreensaver` produce exactly one image and accept the style, color, size and watermark options. Without size options they render at the primary screen resolution. Backgrounds are kept in `%LOCALAPPDATA%\Pixelery\Wallpaper`; each screen saver image gets its own folder under `%LOCALAPPDATA%\Pixelery\Screensaver`.
 
-Developer helpers: `pixelery sheet <folder> [seed] [styleId]` (contact sheets) and `pixelery bench [w] [h] [n]` (render time per style).
+Developer helpers: `Pixelery.Cli.exe sheet <folder> [seed] [styleId]` (contact sheets) and `Pixelery.Cli.exe bench [w] [h] [n]` (render time per style).
 
 ## Build and run
 
@@ -161,19 +164,91 @@ dotnet build Pixelery.slnx
 bin/Debug/Pixelery/net10.0-windows10.0.19041/win-x64/Pixelery.exe
 ```
 
+Debug builds include [Chrome.DevTools.WinUI](https://github.com/wieslawsoltes/CDP) for UI inspection and automation.
+The CDP server starts with the app on loopback port `9225` and stops when the main window closes.
+Open `http://127.0.0.1:9225/json/list` to discover the window and its WebSocket endpoint.
+Release builds exclude the CDP package and server.
+
 ## Release builds
 
-Both projects publish to a single self-contained, compressed exe (no .NET or Windows App SDK install needed):
+Pull requests and pushes to `main` run Windows CI. It builds the solution, runs the Core tests, and publishes the app and CLI.
+The CLI smoke test checks all 37 styles, reproducible PNG output, image dimensions, parallel generation, text watermarks, and settings files.
+CI checks that both publish outputs contain native code without a managed runtime.
+It builds and tests the NSIS installer, including the shared app/CLI directory, upgrades, and removal.
+It uploads test results, the installer, and portable ZIP files, without creating a release or tag.
+
+Run the Core tests locally with `dotnet test Pixelery.Core.Tests/Pixelery.Core.Tests.csproj -c Release`.
+Test files stay under `%LOCALAPPDATA%\Pixelery\Tests` unless `PIXELERY_TEST_ROOT` specifies another directory.
+The caller owns these test files and can remove them after inspection.
+
+After publishing the CLI, run the smoke test from PowerShell 7:
+
+```powershell
+./tools/Test-CliSmoke.ps1 -CliPath ./publish-cli/Pixelery.Cli.exe -OutputDirectory "$env:LOCALAPPDATA/Pixelery/Tests/Smoke"
+```
+
+Both projects use Native AOT for Release publishing. The applications need no .NET or Windows App SDK installation.
+Building them requires the .NET SDK selected in `global.json` and Visual Studio C++ build tools with a Windows SDK.
 
 ```bash
-dotnet publish Pixelery/Pixelery.csproj -c Release -r win-x64 -p:Platform=x64 -o publish        # Pixelery.exe, ~100 MB
-dotnet publish Pixelery.Cli/Pixelery.Cli.csproj -c Release -r win-x64 -o publish-cli            # pixelery.exe, ~42 MB
+dotnet publish Pixelery/Pixelery.csproj -c Release -r win-x64 -p:Platform=x64 -o publish
+dotnet publish Pixelery.Cli/Pixelery.Cli.csproj -c Release -r win-x64 -o publish-cli
 ```
 
 GitHub releases are created manually: Actions → **Pixelery Release** → Run workflow → version (e.g. `0.1.0`).
-The release gets `Pixelery-Windows-x64.exe` and `pixelery-cli-Windows-x64.exe`.
+The release contains a per-user installer, `Pixelery-Setup-<version>-x64.exe`, and two portable archives: `Pixelery-Windows-x64.zip` and `Pixelery.Cli-Windows-x64.zip`.
+The installer needs no administrator rights. Its default directory is `%LOCALAPPDATA%\Programs\Pixelery`.
+It offers all 12 application languages and initializes the selected language if no language preference exists.
+An existing language preference is kept.
+It creates a Start menu shortcut and an uninstall entry for the current user.
+The installer always includes both `Pixelery.exe` and `Pixelery.Cli.exe` directly in the installation directory. Shared libraries are installed once.
+Upgrades move the previously installed app and CLI out of their separate component folders into this common directory.
+Updates and removal preserve application settings and files that the installer did not install.
+
+For a portable installation, use either ZIP.
+Extract the complete archive, then run `Pixelery.exe` or `Pixelery.Cli.exe`. Keep all included libraries and assets beside the executable.
+Debug symbols are excluded from these archives.
+
+Build the installer from existing publish directories with PowerShell 7:
+
+```powershell
+$nsis = ./tools/Get-Nsis.ps1 -Directory "$env:LOCALAPPDATA/Pixelery/Tools"
+./tools/New-Installer.ps1 -AppDirectory ./publish -CliDirectory ./publish-cli -OutputDirectory ./artifacts/packages -NsisPath $nsis
+```
+
+The helper downloads NSIS 3.13 and verifies the archive against a pinned SHA-256 checksum.
+The installer supports `/S` for silent installation. Both applications are always installed.
+Only one Pixelery installation or removal can run at a time. A competing process exits with code 1618.
+For a custom directory, append `/D=<absolute path>` as the last argument, without quotes around the path.
+Its test script requires a clean user account without an existing installed Pixelery.
 
 Settings are stored in `%LOCALAPPDATA%\Pixelery` (override with `PIXELERY_STATE_ROOT`).
+
+## Updates
+
+Open **Settings → Updates** to check for a stable release, download it, and select **Install and restart**.
+The app verifies Ed25519 signatures on both the update feed and installer with [NetSparkle](https://github.com/NetSparkleUpdater/NetSparkle).
+No update is downloaded or installed in the background. Closing settings cancels a pending check or download.
+Installation waits for Pixelery to close, updates both applications, preserves settings, and restarts the app.
+If installation fails, the automatic updater displays the error. After you dismiss it, a successful rollback restarts the previous app.
+Finish image generation before installing an update.
+For portable users, this creates or updates the per-user installation; the extracted portable files remain untouched.
+Downloads stay under the application data directory in `Updates`.
+
+The release workflow publishes `appcast.xml` and `appcast.xml.signature` beside the installer and ZIP files.
+It requires the repository secret `PIXELERY_UPDATE_PRIVATE_KEY`, containing the NetSparkle Ed25519 private key.
+The matching public key is embedded from `Pixelery.Updates/UpdatePublicKey.txt`.
+Keep a secure backup of the private key. Replacing it requires a separately planned trust-key migration for existing installations.
+PR CI uses disposable test keys and has no access to the release signing key.
+
+To generate a signed feed locally after building the installer:
+
+```powershell
+dotnet tool restore
+./tools/New-UpdateFeed.ps1 -InstallerPath ./artifacts/packages/Pixelery-Setup-0.2.0-x64.exe -Version 0.2.0 -OutputDirectory ./artifacts/packages -KeyDirectory "$env:LOCALAPPDATA/Pixelery/ReleaseSigning"
+```
+
+The update feed becomes available after the next manual GitHub release with these assets.
 
 ## License
 

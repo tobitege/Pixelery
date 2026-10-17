@@ -38,6 +38,10 @@ public sealed class GeneratorSettings
 
     public List<BackgroundTone> Tones { get; set; } = [BackgroundTone.Dark, BackgroundTone.Light, BackgroundTone.Vivid];
 
+    public PaletteSet PaletteSet { get; set; } = new();
+
+    public bool UsePaletteSet { get; set; }
+
     public List<DetailLevel> Details { get; set; } = [DetailLevel.Medium, DetailLevel.High];
 
     public bool Grain { get; set; } = true;
@@ -113,6 +117,7 @@ public sealed class GeneratorSettings
         clone.KnownStyles = [.. KnownStyles];
         clone.Palettes = [.. Palettes];
         clone.Tones = [.. Tones];
+        clone.PaletteSet = PaletteSet.Clone();
         clone.Details = [.. Details];
         clone.AspectRatios = [.. AspectRatios];
         clone.CustomAspectRatios = [.. CustomAspectRatios];
@@ -134,9 +139,9 @@ public sealed class GeneratorSettings
             problems.Add("Validation_Folder");
         if (!Styles.Any(id => StyleCatalog.Find(id) != null))
             problems.Add("Validation_Styles");
-        if (Palettes.Count == 0)
+        if (UsePaletteSet ? !PaletteSet.IsValid() : Palettes.Count == 0)
             problems.Add("Validation_Palettes");
-        if (Tones.Count == 0)
+        if (!UsePaletteSet && Tones.Count == 0)
             problems.Add("Validation_Tones");
         if (Details.Count == 0)
             problems.Add("Validation_Details");

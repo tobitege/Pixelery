@@ -3,6 +3,14 @@ using Pixelery.Core.Generation;
 
 namespace Pixelery.Services
 {
+    public enum StyleViewMode
+    {
+        Cards,
+        PreviewList,
+        TextList,
+        TextOnly
+    }
+
     /// <summary>
     /// Represents saved window position and size.
     /// </summary>
@@ -20,6 +28,7 @@ namespace Pixelery.Services
         private const string WindowKey = "window";
         private const string OptionsKey = "options";
         private const string GeneratorFile = "generator.json";
+        private const string PaletteDirectoryKey = "palette-directory";
 
         public static readonly WindowBounds DefaultWindowBounds = new(80, 60, 1400, 900);
 
@@ -56,6 +65,52 @@ namespace Pixelery.Services
 
         public static string? LoadLanguage() => LoadSingle(LanguageKey);
         public static void SaveLanguage(string cultureName) => SaveSingle(LanguageKey, cultureName);
+
+        /// <summary>Last successful palette export folder, or the app's own palette directory.</summary>
+        public static string PaletteDirectory
+        {
+            get
+            {
+                var saved = SanitizeDirectoryPath(LoadSingle(PaletteDirectoryKey));
+                if (saved != null && Directory.Exists(saved))
+                    return saved;
+
+                // Only create the app-owned fallback, never a folder read from persisted settings.
+                var root = SanitizeDirectoryPath(StateDirectory)
+                    ?? throw new InvalidOperationException("The app data directory is invalid.");
+                var folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(root, "Palettes"));
+                if (System.IO.Path.GetRelativePath(root, folder) != "Palettes")
+                    throw new InvalidOperationException("The palette folder must stay inside the app data directory.");
+                Directory.CreateDirectory(folder);
+                return folder;
+            }
+        }
+
+        /// <summary>Rejects malformed or relative paths and returns a canonical absolute directory path.</summary>
+        private static string? SanitizeDirectoryPath(string? candidate)
+        {
+            if (string.IsNullOrWhiteSpace(candidate))
+                return null;
+            if (candidate.IndexOfAny(System.IO.Path.GetInvalidPathChars()) >= 0)
+                return null;
+            if (!System.IO.Path.IsPathFullyQualified(candidate))
+                return null;
+            try
+            {
+                return System.IO.Path.GetFullPath(candidate);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return null;
+            }
+        }
+
+        public static void RememberPaletteDirectory(string savedFile)
+        {
+            var directory = SanitizeDirectoryPath(System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(savedFile)));
+            if (directory != null && Directory.Exists(directory))
+                SaveSingle(PaletteDirectoryKey, directory);
+        }
 
         public static DaisySize? LoadGlobalSize()
         {
@@ -112,6 +167,9 @@ namespace Pixelery.Services
         /// <summary>Renders the style previews with the enabled palettes and tones.</summary>
         public static bool PreviewsFollowColors { get; set; } = true;
 
+        /// <summary>Layout of the style selection, independent of generation settings.</summary>
+        public static StyleViewMode StyleView { get; set; } = StyleViewMode.PreviewList;
+
         /// <summary>Seconds between two slideshow images.</summary>
         public static int SlideshowSeconds { get; set; } = 8;
 
@@ -150,6 +208,9 @@ namespace Pixelery.Services
                     case nameof(PreviewsFollowColors) when bool.TryParse(value, out var b):
                         PreviewsFollowColors = b;
                         break;
+                    case nameof(StyleView) when Enum.TryParse<StyleViewMode>(value, out var mode) && Enum.IsDefined(mode):
+                        StyleView = mode;
+                        break;
                     case nameof(SlideshowSeconds) when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i):
                         SlideshowSeconds = Math.Clamp(i, 1, 3600);
                         break;
@@ -177,6 +238,7 @@ namespace Pixelery.Services
                 $"{nameof(PreviewIntervalMs)}={PreviewIntervalMs.ToString(CultureInfo.InvariantCulture)}",
                 $"{nameof(OpenFolderWhenDone)}={OpenFolderWhenDone}",
                 $"{nameof(PreviewsFollowColors)}={PreviewsFollowColors}",
+                $"{nameof(StyleView)}={StyleView}",
                 $"{nameof(SlideshowSeconds)}={SlideshowSeconds.ToString(CultureInfo.InvariantCulture)}",
                 $"{nameof(SlideshowFullScreen)}={SlideshowFullScreen}",
                 $"{nameof(SlideshowCrossfade)}={SlideshowCrossfade}",

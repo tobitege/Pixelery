@@ -12,8 +12,6 @@ namespace Pixelery.Views
     public sealed partial class GeneratorView
     {
         private readonly List<(DaisyButton Chip, Func<bool> IsSelected)> _chips = [];
-        private WrapPanel? _paletteSamples;
-        private int _paletteSampleSeed = Random.Shared.Next();
         private TextBlock? _sizeSummary;
         private DaisyInput? _folderInput;
         private DaisyInput? _nameInput;
@@ -72,7 +70,7 @@ namespace Pixelery.Views
 
         #region Building blocks
 
-        private Border Section(string iconKey, string titleKey, string? hintKey, UIElement body, UIElement? headerRight = null)
+        private Border Section(string iconKey, string titleKey, string? hintKey, UIElement body, UIElement? headerRight = null, double spacing = 18)
         {
             var header = new Grid { ColumnSpacing = 12 };
             header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -107,7 +105,7 @@ namespace Pixelery.Views
                 header.Children.Add(right);
             }
 
-            var stack = new StackPanel { Spacing = 18 };
+            var stack = new StackPanel { Spacing = spacing };
             stack.Children.Add(header);
             stack.Children.Add(body);
             return new Border { Style = (Style)Application.Current.Resources["AppSectionStyle"], Child = stack };
@@ -223,31 +221,11 @@ namespace Pixelery.Views
 
             void ColorsChanged()
             {
-                UpdatePaletteSamples();
+                ShufflePaletteSamples();
                 SchedulePreviewRefresh();
             }
 
-            _paletteSamples = new WrapPanel { HorizontalSpacing = 10, VerticalSpacing = 10 };
-            var sampleShuffle = new DaisyButton
-            {
-                Variant = DaisyButtonVariant.Ghost,
-                Shape = DaisyButtonShape.Square,
-                Size = DaisySize.Small,
-                IconData = Icon("AppIconShuffle"),
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            LocalizeTip(sampleShuffle, "Colors_ShuffleSamples");
-            sampleShuffle.Click += (_, _) =>
-            {
-                _paletteSampleSeed = Random.Shared.Next();
-                UpdatePaletteSamples();
-            };
-            var samplesRow = new Grid { ColumnSpacing = 8 };
-            samplesRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            samplesRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            Grid.SetColumn(sampleShuffle, 1);
-            samplesRow.Children.Add(_paletteSamples);
-            samplesRow.Children.Add(sampleShuffle);
+            var samples = BuildPaletteSamples();
 
             var finish = new StackPanel { Spacing = 10 };
             finish.Children.Add(LToggleRow("Colors_Grain", Settings.Grain, v =>
@@ -263,7 +241,7 @@ namespace Pixelery.Views
 
             var body = new StackPanel { Spacing = 22 };
             body.Children.Add(Block("Colors_Palettes", ChipGroup(families, () => Settings.Palettes, ColorsChanged), "Colors_PalettesHint"));
-            body.Children.Add(Block("Colors_Samples", samplesRow));
+            body.Children.Add(Block("Colors_Samples", samples));
             body.Children.Add(Columns(300 * SizeFactor,
                 Block("Colors_Tones", ChipGroup(tones, () => Settings.Tones, ColorsChanged)),
                 Block("Colors_Detail", ChipGroup(details, () => Settings.Details, SchedulePreviewRefresh)),
@@ -271,49 +249,6 @@ namespace Pixelery.Views
 
             UpdatePaletteSamples();
             return Section("AppIconPalette", "Section_Colors", "Section_ColorsHint", body);
-        }
-
-        private void UpdatePaletteSamples()
-        {
-            if (_paletteSamples == null)
-                return;
-            _paletteSamples.Children.Clear();
-            if (Settings.Palettes.Count == 0 || Settings.Tones.Count == 0)
-            {
-                _paletteSamples.Children.Add(Text(L("Validation_Palettes"), ResponsiveFontTier.Secondary, 0.6));
-                return;
-            }
-            var rng = new Random(_paletteSampleSeed);
-            var count = 8;
-            for (var i = 0; i < count; i++)
-            {
-                var family = Settings.Palettes[rng.Next(Settings.Palettes.Count)];
-                var tone = Settings.Tones[rng.Next(Settings.Tones.Count)];
-                var palette = PaletteFactory.Create(new Random(rng.Next()), family, tone);
-                var strip = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 3 };
-                foreach (var color in palette.Colors)
-                {
-                    strip.Children.Add(new Border
-                    {
-                        Width = 16 * SizeFactor,
-                        Height = 26 * SizeFactor,
-                        CornerRadius = new CornerRadius(4),
-                        Background = new SolidColorBrush(Color.FromArgb(255, color.Red, color.Green, color.Blue))
-                    });
-                }
-                var bg = palette.Background;
-                var frame = new Border
-                {
-                    Padding = new Thickness(6),
-                    CornerRadius = new CornerRadius(8),
-                    BorderThickness = new Thickness(1),
-                    BorderBrush = DaisyResourceLookup.GetBrush("DaisyBase300Brush"),
-                    Background = new SolidColorBrush(Color.FromArgb(255, bg.Red, bg.Green, bg.Blue)),
-                    Child = strip
-                };
-                ToolTipService.SetToolTip(frame, $"{palette.Name} · {L($"Palette_{family}")} · {L($"Tone_{tone}")}");
-                _paletteSamples.Children.Add(frame);
-            }
         }
 
         #endregion
@@ -759,7 +694,7 @@ namespace Pixelery.Views
 
             var styles = Settings.Styles.Select(StyleCatalog.Find).OfType<ArtStyle>().ToList();
             var sizes = Settings.BuildSizePool();
-            if (styles.Count == 0 || sizes.Count == 0 || Settings.Palettes.Count == 0 || Settings.Tones.Count == 0
+            if (styles.Count == 0 || sizes.Count == 0 || (Settings.UsePaletteSet ? !Settings.PaletteSet.IsValid() : Settings.Palettes.Count == 0 || Settings.Tones.Count == 0)
                 || Settings.Details.Count == 0 || Settings.Formats.Count == 0)
             {
                 _nameExamples.Children.Add(Text(L("Output_NamePreviewUnavailable"), ResponsiveFontTier.Secondary, 0.6));
