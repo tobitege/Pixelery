@@ -29,6 +29,7 @@ namespace Pixelery.Views
             var body = new StackPanel { Spacing = 6 };
             _stylesBody = new StackPanel { Spacing = 18 };
             var viewSelector = new DaisySelect { Width = 240, HorizontalAlignment = HorizontalAlignment.Right };
+            FollowPopupTheme(viewSelector);
             StyleViewMode[] viewModes = [StyleViewMode.PreviewList, StyleViewMode.Cards, StyleViewMode.TextList, StyleViewMode.TextOnly];
             var updatingViewSelector = false;
             AutomationProperties.SetAutomationId(viewSelector, "StyleViewSelector");
@@ -138,7 +139,7 @@ namespace Pixelery.Views
 
         private DaisyButton ActionButton(string key, Action onClick)
         {
-            var button = new DaisyButton { Variant = DaisyButtonVariant.Primary, Size = DaisySize.Small };
+            var button = new DaisyButton { Variant = DaisyButtonVariant.Primary };
             Localize(() => button.Content = L(key));
             button.Click += (_, _) => onClick();
             return button;

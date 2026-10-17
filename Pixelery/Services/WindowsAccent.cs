@@ -4,8 +4,8 @@ using Windows.UI.ViewManagement;
 namespace Pixelery.Services
 {
     /// <summary>
-    /// Windows accent color for borders (window frame, hover, focus and selection frames).
-    /// <see cref="Brush"/> is one shared instance whose color follows the system setting, so elements using it update live.
+    /// Accent color for borders: standard Fluent blue, or the Windows accent for other themes.
+    /// <see cref="Brush"/> is shared so existing frames follow theme and system changes.
     /// </summary>
     public static class WindowsAccent
     {
@@ -25,14 +25,18 @@ namespace Pixelery.Services
                 return;
             _dispatcher = dispatcher;
             // Raised on a background thread.
-            Settings.ColorValuesChanged += (_, _) => _dispatcher.TryEnqueue(() =>
-            {
-                var accent = ReadAccent();
-                if (accent == Brush.Color)
-                    return;
-                Brush.Color = accent;
-                Changed?.Invoke(null, EventArgs.Empty);
-            });
+            Settings.ColorValuesChanged += (_, _) => _dispatcher.TryEnqueue(Refresh);
+        }
+
+        public static void Refresh()
+        {
+            var accent = FluentThemes.IsFluent(DaisyThemeManager.CurrentThemeName) && !AppSettings.UseWindowsAccent
+                ? ((SolidColorBrush)DaisyResourceLookup.GetBrush("DaisyPrimaryBrush")).Color
+                : ReadAccent();
+            if (accent == Brush.Color)
+                return;
+            Brush.Color = accent;
+            Changed?.Invoke(null, EventArgs.Empty);
         }
 
         private static Color ReadAccent() => Settings.GetColorValue(UIColorType.Accent);

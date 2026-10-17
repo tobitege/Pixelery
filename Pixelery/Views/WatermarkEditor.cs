@@ -489,6 +489,7 @@ namespace Pixelery.Views
                 ItemsSource = fonts.Select(f => new SelectOption(f, f)).ToList(),
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
+            FollowPopupTheme(fontSelect);
             fontSelect.SelectedItem = ((List<SelectOption>)fontSelect.ItemsSource).FirstOrDefault(o => (string)o.Key == layer.FontFamily);
             fontSelect.SelectionChanged += (_, _) =>
             {

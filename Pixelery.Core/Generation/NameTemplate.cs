@@ -25,6 +25,7 @@ public sealed record NameValues(
 /// </summary>
 public sealed partial class NameTemplate
 {
+    public const int MaxPatternLength = 1024;
     /// <summary>Supported placeholders (token, sample format) for help texts and insert buttons.</summary>
     public static IReadOnlyList<(string Token, string Example)> Placeholders { get; } =
     [
@@ -69,6 +70,17 @@ public sealed partial class NameTemplate
             return false;
         }
 
+        if (pattern.Length > MaxPatternLength)
+        {
+            error = $"> {MaxPatternLength}";
+            return false;
+        }
+        if (pattern.Any(char.IsControl))
+        {
+            error = $"U+{(int)pattern.First(char.IsControl):X4}";
+            return false;
+        }
+
         var parts = new List<(string?, string?, string?)>();
         var last = 0;
         foreach (Match match in TokenRegex().Matches(pattern))
@@ -105,12 +117,24 @@ public sealed partial class NameTemplate
             return false;
         }
 
+        var invalidSegment = pattern.Split(['\\', '/']).FirstOrDefault(s => (s.Trim() is "." or "..") || IsReservedName(s.Trim().TrimEnd('.')));
+        if (parts.Any(p => p.Item1?.Any(InvalidChars.Contains) == true) || invalidSegment != null)
+        {
+            error = invalidSegment ?? pattern;
+            return false;
+        }
+
         template = new NameTemplate(parts);
         return true;
     }
 
     private static bool IsValidFormat(string token, string format)
     {
+        // Numeric standard formats accept enormous precision values; reject them before formatting allocates memory.
+        if (format.Length > 128 || ((token is "n" or "total" or "w" or "h")
+            && format.Length > 1 && char.IsLetter(format[0]) && format[1..].All(char.IsDigit)
+            && (!int.TryParse(format[1..], out var precision) || precision > 128)))
+            return false;
         try
         {
             switch (token)
@@ -215,6 +239,8 @@ public sealed partial class NameTemplate
         "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
     };
 
+    private static bool IsReservedName(string segment) => ReservedNames.Contains(segment.Split('.')[0]);
+
     /// <summary>Removes invalid characters, "." / ".." segments and reserved device names.</summary>
     public static string Sanitize(string relative)
     {
@@ -224,7 +250,7 @@ public sealed partial class NameTemplate
                 var clean = new string([.. s.Select(c => InvalidChars.Contains(c) ? '_' : c)]).Trim().TrimEnd('.');
                 if (clean is "" or "." or "..")
                     return null;
-                return ReservedNames.Contains(clean) ? "_" + clean : clean;
+                return IsReservedName(clean) ? "_" + clean : clean;
             })
             .Where(s => s != null)
             .ToList();

@@ -38,8 +38,11 @@ namespace Pixelery
                 Source = new Uri("ms-appx:///AppResources.xaml")
             });
             DaisyResourceLookup.EnsureTokens();
+            // Keep one native selection brush; MainWindow updates it when the theme changes.
+            Resources["TextControlSelectionHighlightColor"] = new SolidColorBrush();
 
             AppSettings.Initialize(GetStateDirectory());
+            FluentThemes.Register();
             Pixelery.Updates.UpdateDownload.CleanupAbandoned(AppSettings.StateDirectory);
 
             // Ensure the localization registers its resolver early.
@@ -73,7 +76,7 @@ namespace Pixelery
                 AppSettings.SaveLanguage(cultureName);
 
             var savedTheme = AppSettings.LoadTheme() ?? "Dark";
-            if (!DaisyThemeManager.ApplyTheme(savedTheme))
+            if (!DaisyThemeManager.ApplyTheme(FluentThemes.ResolveName(savedTheme)))
             {
                 DaisyThemeManager.ApplyTheme("Dark");
             }

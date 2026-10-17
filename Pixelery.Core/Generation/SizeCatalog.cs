@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Pixelery.Core.Generation;
 
@@ -25,7 +26,7 @@ public readonly record struct FixedSizePreset(string Label, int Width, int Heigh
 /// <summary>
 /// Common aspect ratios, edge lengths and fixed dimensions, plus parsing of user-entered values.
 /// </summary>
-public static class SizeCatalog
+public static partial class SizeCatalog
 {
     public const int MinEdge = 16;
     public const int MaxEdge = 16384;
@@ -51,21 +52,35 @@ public static class SizeCatalog
         new("A4 300 dpi", 2480, 3508)
     ];
 
+    // Editing permits incomplete values (for example "16:"); submission still uses the parsers below.
+    public static bool IsRatioInput(string text) => text.Length <= 64 && RatioInputPattern().IsMatch(text);
+
+    public static bool IsEdgeInput(string text) => text.Length <= 5 && text.All(char.IsAsciiDigit);
+
+    public static bool IsSizeInput(string text) => text.Length <= 64 && SizeInputPattern().IsMatch(text);
+
+    [GeneratedRegex(@"\A *[0-9]*(?:[.,٫][0-9]*)? *(?:[:xX×/] *[0-9]*(?:[.,٫][0-9]*)? *)?\z")]
+    private static partial Regex RatioInputPattern();
+
+    [GeneratedRegex(@"\A *[0-9]{0,5}(?: *[xX×*,] *[0-9]{0,5}| +[0-9]{0,5})? *\z")]
+    private static partial Regex SizeInputPattern();
+
     /// <summary>Parses "16:9", "16x9" or "1.85" (as 1.85:1).</summary>
     public static bool TryParseRatio(string? text, out double width, out double height)
     {
         width = height = 0;
         if (string.IsNullOrWhiteSpace(text))
             return false;
-        var parts = text.Trim().Split([':', 'x', 'X', '×', '/'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 1 && double.TryParse(parts[0].Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var single))
+        var parts = text.Trim().Replace(',', '.').Replace('٫', '.')
+            .Split([':', 'x', 'X', '×', '/'], StringSplitOptions.TrimEntries);
+        if (parts.Length == 1 && double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var single))
         {
             width = single;
             height = 1;
         }
         else if (parts.Length == 2
-                 && double.TryParse(parts[0].Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var w)
-                 && double.TryParse(parts[1].Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var h))
+                 && double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var w)
+                 && double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var h))
         {
             width = w;
             height = h;
@@ -77,14 +92,19 @@ public static class SizeCatalog
         return width > 0 && height > 0 && width / height is >= 0.05 and <= 20;
     }
 
-    /// <summary>Normalizes a ratio for display and storage ("16:9", landscape first).</summary>
+    /// <summary>Normalizes a ratio for culture-independent storage ("16:9", landscape first).</summary>
     public static string NormalizeRatio(double width, double height)
     {
         if (width < height)
             (width, height) = (height, width);
-        static string F(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+        static string F(double v) => v.ToString("G", CultureInfo.InvariantCulture);
         return $"{F(width)}:{F(height)}";
     }
+
+    /// <summary>Displays a stored ratio with the selected culture's decimal separator.</summary>
+    public static string FormatRatio(string ratio, CultureInfo culture) =>
+        ratio.Replace(',', '.').Replace('٫', '.')
+            .Replace(".", culture.NumberFormat.NumberDecimalSeparator, StringComparison.Ordinal);
 
     /// <summary>Parses "1920x1080", "1920 × 1080" or "1920*1080".</summary>
     public static bool TryParseSize(string? text, out int width, out int height)
@@ -142,7 +162,7 @@ public static class SizeCatalog
     /// <summary>Label of a ratio as entered (e.g. "7:5" → "7x5", portrait "5x7"), independent of pixel rounding.</summary>
     private static string RatioLabel(double longSide, double shortSide, bool portrait)
     {
-        static string F(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+        static string F(double v) => v.ToString("G", CultureInfo.InvariantCulture);
         return portrait ? $"{F(shortSide)}x{F(longSide)}" : $"{F(longSide)}x{F(shortSide)}";
     }
 
@@ -185,8 +205,20 @@ public static class SizeCatalog
 
         foreach (var text in fixedSizes.Distinct())
         {
-            if (TryParseSize(text, out var w, out var h))
-                Add(w, h, RatioLabel(w, h));
+            if (!TryParseSize(text, out var w, out var h))
+                continue;
+            var longSide = Math.Max(w, h);
+            var shortSide = Math.Min(w, h);
+            if (longSide == shortSide)
+                Add(w, h, "1x1");
+            else
+                foreach (var orientation in orientationList)
+                {
+                    var portrait = orientation == ImageOrientation.Portrait;
+                    var width = portrait ? shortSide : longSide;
+                    var height = portrait ? longSide : shortSide;
+                    Add(width, height, RatioLabel(width, height));
+                }
         }
 
         return result;

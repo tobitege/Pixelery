@@ -14,11 +14,47 @@ public static class SettingsJson
     /// </summary>
     public static GeneratorSettings Deserialize(string json, bool selectNewStyles = true)
     {
+        using var document = JsonDocument.Parse(json, new JsonDocumentOptions
+        {
+            CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true
+        });
+        if (document.RootElement.ValueKind != JsonValueKind.Object
+            || !document.RootElement.TryGetProperty(nameof(GeneratorSettings.FormatVersion), out var version)
+            || version.ValueKind != JsonValueKind.Number
+            || !version.TryGetInt32(out var formatVersion) || formatVersion != GeneratorSettings.CurrentFormatVersion)
+            throw new JsonException("Unsupported settings format version.");
         var settings = JsonSerializer.Deserialize(json, GeneratorJsonContext.Default.GeneratorSettings)
             ?? throw new JsonException("The settings file is empty.");
         if (settings.PaletteSet?.Entries == null || (settings.PaletteSet.Entries.Count != 0 && !settings.PaletteSet.IsValid())
             || (settings.UsePaletteSet && !settings.PaletteSet.IsValid()))
             throw new JsonException("Invalid palette set.");
+        if (settings.AspectRatios == null || settings.Orientations == null || settings.LongEdges == null || settings.FixedSizes == null
+            || !settings.CaptureSizeSelection().IsValid(settings.MultipleSizes)
+            || settings.InactiveSizeSelection?.IsValid(!settings.MultipleSizes) != true
+            || (settings.RandomSizes && !settings.MultipleSizes)
+            || settings.CustomAspectRatios == null || settings.CustomAspectRatios.Any(r => !SizeCatalog.TryParseRatio(r, out _, out _))
+            || settings.CustomLongEdges == null || settings.CustomLongEdges.Any(e => e is < SizeCatalog.MinEdge or > SizeCatalog.MaxEdge)
+            || settings.CustomFixedSizes == null || settings.CustomFixedSizes.Any(s => !SizeCatalog.TryParseSize(s, out _, out _)))
+            throw new JsonException("Invalid size selection.");
+        if (!settings.HasValidDateRange())
+            throw new JsonException("Invalid timestamp range.");
+        var selectedPattern = settings.NamePattern?.Trim();
+        if (selectedPattern == null || settings.NamePatterns == null || settings.NamePatterns.Count > GeneratorSettings.MaxNamePatterns
+            || !NameTemplate.TryParse(selectedPattern, out _, out _))
+            throw new JsonException("Invalid name pattern.");
+        settings.NamePattern = selectedPattern;
+        List<string> patterns = [];
+        foreach (var value in settings.NamePatterns.Append(settings.NamePattern))
+        {
+            var pattern = value?.Trim();
+            if (!NameTemplate.TryParse(pattern, out _, out _))
+                throw new JsonException("Invalid saved name pattern.");
+            if (!patterns.Contains(pattern!, StringComparer.Ordinal))
+                patterns.Add(pattern!);
+        }
+        if (patterns.Count > GeneratorSettings.MaxNamePatterns)
+            throw new JsonException("Too many saved name patterns.");
+        settings.NamePatterns = patterns;
         if (selectNewStyles)
             settings.SelectNewStyles();
         return settings;
@@ -41,6 +77,7 @@ public static class SettingsJson
         var json = JsonSerializer.SerializeToNode(copy, GeneratorJsonContext.Default.GeneratorSettings)!.AsObject();
         json.Remove(nameof(GeneratorSettings.OutputFolder));
         json.Remove(nameof(GeneratorSettings.Threads));
+        json.Remove(nameof(GeneratorSettings.NamePatterns));
         return json.ToJsonString(GeneratorJsonContext.Default.Options);
     }
 
@@ -56,6 +93,9 @@ public static class SettingsJson
         var settings = Deserialize(json, selectNewStyles: false);
         settings.OutputFolder = local.OutputFolder;
         settings.Threads = local.Threads;
+        settings.NamePatterns = [.. local.NamePatterns];
+        if (!settings.TryAddNamePattern(settings.NamePattern))
+            throw new JsonException("Cannot add the imported name pattern.");
         return settings;
     }
 

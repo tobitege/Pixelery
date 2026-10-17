@@ -31,7 +31,7 @@ namespace Pixelery.Views
             foreach (var preset in new[] { 10, 100, 1_000, 10_000 })
             {
                 var value = preset;
-                var button = new DaisyButton { Variant = DaisyButtonVariant.Primary, Size = DaisySize.Small };
+                var button = new DaisyButton { Variant = DaisyButtonVariant.Primary };
                 Localize(() => button.Content = value.ToString("N0", AppLocalization.CurrentCulture));
                 button.Click += (_, _) => CountInput.Value = value;
                 CountPresets.Children.Add(button);

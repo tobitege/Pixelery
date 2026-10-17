@@ -97,12 +97,15 @@ internal static class Help
                 --grain / --no-grain         Film grain
                 --vignette / --no-vignette   Darker edges
 
-          Sizes (all combinations form the pool; each image picks one at random; size options replace the
+          Sizes (combinations cycle in order by default; --random-sizes samples them randomly; size options replace the
           sizes of a loaded configuration: --sizes alone uses only those sizes, --ratios/--edges alone no fixed sizes)
-                --orientation <list> landscape, portrait or both
+                --multiple-sizes / --no-multiple-sizes  Restore the remembered multiple or single selection
+                                    Without this switch, explicit size choices determine the mode
+                --orientation <list> landscape (default), portrait or both; also applies to fixed sizes
                 --ratios <list>      Aspect ratios, e.g. 16:9,4:3,1.85 ("none" to clear)
-                --edges <list>       Long edge in pixels, e.g. 1920,3840 ("none" to clear)
+                --edges <list>       Horizontal resolution in landscape; height in portrait, e.g. 1920,3840 ("none" to clear)
                 --sizes <list>       Fixed sizes WIDTHxHEIGHT or preset names, e.g. 1920x1080,"4K UHD" (see: list sizes)
+                --random-sizes / --no-random-sizes  Random selection or ordered cycling; requires multiple-size mode
 
           Watermark (layers, fonts, outline, shadow, plate, tint and blend modes in full via --config)
                 --watermark / --no-watermark  Turn the configured watermark on or off
@@ -140,8 +143,9 @@ internal static class Help
                             --name <pattern>     File name schema, e.g. "{style}_{n:00000}_{w}x{h}" (see: list placeholders)
                             --start <n>          First value of {n}
                             --overwrite / --no-overwrite        Replace existing files instead of adding a suffix
-                            --spread-dates / --no-spread-dates  Random file dates in the past
-                            --spread-years <n>   How many years into the past (implies --spread-dates)
+                            --spread-dates / --no-spread-dates  Random file timestamps (off by default)
+                            --spread-from <yyyy-MM>  First month, inclusive (enables timestamp spreading)
+                            --spread-to <yyyy-MM>    Last month, inclusive (enables timestamp spreading)
                             --exif / --no-exif   Write date taken and camera into JPEG files
 
                       Run
@@ -155,7 +159,7 @@ internal static class Help
                       Pixelery.Cli.exe generate -o D:\TestImages -n 10000 -j max
                       Pixelery.Cli.exe generate --app-config -n 500
                       Pixelery.Cli.exe generate -s marble,aurora --palettes neon --tones dark --sizes "4K UHD" --formats png
-                      Pixelery.Cli.exe generate -n 2000 --name "{date:yyyy}\{date:MM}\{style}_{n:00000}" --spread-years 10
+                      Pixelery.Cli.exe generate -n 2000 --name "{date:yyyy}\{date:MM}\{style}_{n:00000}" --spread-from 2020-01 --spread-to 2024-12
                     """);
                 break;
             case "render":

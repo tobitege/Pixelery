@@ -5,18 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-10-17
 
 ### Added
 
+- Added a new Pixelery icon for the app, CLI and installer.
+- Added Fluent Dark and Fluent Light at the top of the theme list, using the standard blue WinUI palette with an optional Windows accent. Native controls and dropdowns follow the selected theme's light or dark mode.
 - Added export and import of the generator settings, so another PC can create the same gallery (#13). The file leaves out the target folder and the thread count. Export fixes an empty seed and an empty reference date; import warns about another Pixelery version or a missing watermark font.
-- Added a reference date in the output settings. Spread file dates, EXIF dates, `{date}` and `{now}` count from it instead of the day of the run.
+- Added a reference date for `{now}` and, when timestamp distribution is off, the image date, EXIF dates and `{date}`.
+- Added separate single and multiple size selections that survive mode changes and restarts, with ordered cycling or optional random selection.
+- Added CLI switches for single/multiple size selection and ordered/random generation, including saved selections and mode details in the generation plan.
+- Added a saved filename pattern list with add/remove actions, duplicate prevention and validation of imported patterns. Shared settings include only the selected pattern.
 - Added translations for the new controls in all 12 languages.
 
 ### Changed
 
+- Select styles only through their selection indicator; clicking the thumbnail, title or eye opens the preview. Cards place the larger selection indicator at the top left and the eye at the top right.
 - `--config` reads the styles exactly as written; styles added in a newer Pixelery are no longer selected automatically. `--app-config` still selects them, like the app.
 - Warning messages stay on screen for six seconds, like errors.
+- Default to one landscape size. Orientation now applies to fixed presets as well as aspect ratios.
+- Show the selected image size in one line below the size-mode controls. Use aligned dropdowns for ratios, resolution and presets, with checkboxes for multiple selection and compact inputs for custom values. Explain how orientation affects the horizontal resolution.
+- Require settings format version 1 for local and shared generator settings; unversioned files are no longer accepted.
+- Replace the past-years setting with an inclusive month/year period for file timestamps and capture dates, independent of the reference date. Timestamp distribution is off by default. Save and share both endpoints; the CLI accepts `--spread-from` and `--spread-to`.
+- Show the start number and reference date in one row each.
+- Add the app logo, platform and package badges, CI status and all 12 supported language notices to the README header.
+
+### Fixed
+
+- Open the full-screen style preview and slideshow on the monitor of the window that starts them.
+- Reject invalid characters immediately when typing or pasting custom ratios, resolutions and dimensions.
+- Preserve decimal precision in custom aspect ratios when selecting, saving and sharing settings. Display the decimal separator for the selected language while keeping stored values independent of the language.
+- Smooth one-pixel style outlines and selection circles, with a softer selected color.
+- Adjust the optical text alignment in buttons and badges through shared app padding tokens.
+- Text action buttons and image-count presets now use the selected interface size from startup. Count presets wrap when they need more space.
 
 ## [0.2.0] - 2026-10-17
 

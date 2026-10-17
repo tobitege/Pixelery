@@ -9,15 +9,17 @@ namespace Pixelery.Views
 {
     /// <summary>
     /// Selectable card for one art style: live preview thumbnail, name and description.
-    /// Clicking toggles the selection; the eye button opens a large preview.
+    /// The selection indicator toggles the style; the remaining card opens a large preview.
     /// </summary>
     public sealed partial class StyleCard : UserControl
     {
         private readonly Border _frame;
+        private readonly Rectangle _outline;
         private readonly Border _imageHost;
         private readonly Image _image;
         private readonly DaisySkeleton _placeholder;
-        private readonly Border _check;
+        private readonly Grid _check;
+        private readonly Ellipse _checkCircle;
         private readonly Path _checkMark;
         private readonly Button _previewButton;
         private readonly TextBlock _name;
@@ -39,20 +41,22 @@ namespace Pixelery.Views
             _image = new Image { Stretch = Stretch.UniformToFill, Opacity = 0 };
             _placeholder = new DaisySkeleton { HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Stretch };
             _checkMark = new Path { Data = ToGeometry(Icon("AppIconCheck")!) };
-            _check = new Border
+            _checkCircle = new Ellipse();
+            _check = new Grid
             {
                 Width = 26,
                 Height = 26,
-                CornerRadius = new CornerRadius(13),
+                Background = new SolidColorBrush(Colors.Transparent),
                 Margin = new Thickness(8),
-                HorizontalAlignment = HorizontalAlignment.Right,
-                VerticalAlignment = VerticalAlignment.Top,
-                Child = new Viewbox
-                {
-                    Margin = new Thickness(5),
-                    Child = _checkMark
-                }
+                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Top
             };
+            _check.Children.Add(_checkCircle);
+            _check.Children.Add(new Viewbox
+            {
+                Margin = new Thickness(5),
+                Child = _checkMark
+            });
             _previewButton = new Button
             {
                 Width = 44,
@@ -69,7 +73,7 @@ namespace Pixelery.Views
                 },
                 Margin = new Thickness(8),
                 HorizontalAlignment = HorizontalAlignment.Right,
-                VerticalAlignment = VerticalAlignment.Bottom,
+                VerticalAlignment = VerticalAlignment.Top,
                 Opacity = 0.9
             };
             AutomationProperties.SetAutomationId(_previewButton, $"Preview_{style.Id}");
@@ -111,10 +115,15 @@ namespace Pixelery.Views
             _frame = new Border
             {
                 CornerRadius = new CornerRadius(12),
-                BorderThickness = new Thickness(1),
+                Padding = new Thickness(1),
                 Child = _layout
             };
-            Content = _frame;
+            // Shape strokes anti-alias the one-pixel curves independently of the content border.
+            _outline = new Rectangle { RadiusX = 12, RadiusY = 12, StrokeThickness = 1, IsHitTestVisible = false };
+            var surface = new Grid();
+            surface.Children.Add(_frame);
+            surface.Children.Add(_outline);
+            Content = surface;
 
             SizeChanged += (_, e) =>
             {
@@ -168,13 +177,12 @@ namespace Pixelery.Views
             _description.TextWrapping = cards ? TextWrapping.Wrap : TextWrapping.NoWrap;
             _description.MaxLines = cards ? 2 : 1;
             _description.Visibility = textOnly ? Visibility.Collapsed : Visibility.Visible;
-            _check.Width = _check.Height = textOnly ? 20 * f : 26;
-            _check.CornerRadius = new CornerRadius(_check.Width / 2);
+            _check.Width = _check.Height = cards ? 28 : textOnly ? 20 * f : 26;
             _check.Margin = cards ? new Thickness(8) : new Thickness(0);
-            _check.HorizontalAlignment = cards ? HorizontalAlignment.Right : HorizontalAlignment.Center;
+            _check.HorizontalAlignment = cards ? HorizontalAlignment.Left : HorizontalAlignment.Center;
             _check.VerticalAlignment = cards ? VerticalAlignment.Top : VerticalAlignment.Center;
             _previewButton.Margin = cards ? new Thickness(8) : new Thickness(0);
-            _previewButton.VerticalAlignment = cards ? VerticalAlignment.Bottom : VerticalAlignment.Center;
+            _previewButton.VerticalAlignment = cards ? VerticalAlignment.Top : VerticalAlignment.Center;
             _previewButton.Width = _previewButton.Height = cards ? 44 : 32;
             _previewButton.CornerRadius = new CornerRadius(_previewButton.Width / 2);
             var previewIcon = (Viewbox)_previewButton.Content;
@@ -226,12 +234,14 @@ namespace Pixelery.Views
             _previewButton.Foreground = previewKeyboardFocus ? DaisyResourceLookup.GetBrush("DaisyPrimaryContentBrush") : content;
             _previewButton.Background = previewKeyboardFocus ? primary : DaisyResourceLookup.GetBrush("DaisyBase300Brush");
             _frame.Background = DaisyResourceLookup.GetBrush("DaisyBase200Brush");
-            _frame.BorderBrush = _isSelected || _isHovered ? primary : DaisyResourceLookup.GetBrush("DaisyBase300Brush");
+            _outline.Stroke = _isSelected || _isHovered ? primary : DaisyResourceLookup.GetBrush("DaisyBase300Brush");
+            _outline.Opacity = _isSelected && !_isHovered ? 0.75 : 1;
             _checkMark.Fill = DaisyResourceLookup.GetBrush("DaisyPrimaryContentBrush");
-            _check.Background = _isSelected ? primary : DaisyResourceLookup.GetBrush("DaisyBase100Brush");
-            _check.BorderBrush = _isSelected ? primary : content;
-            _check.BorderThickness = _isSelected ? new Thickness(0) : new Thickness(1);
-            _check.Child.Visibility = _isSelected ? Visibility.Visible : Visibility.Collapsed;
+            _checkCircle.Fill = _isSelected ? primary : DaisyResourceLookup.GetBrush("DaisyBase100Brush");
+            _checkCircle.Opacity = _isSelected ? 0.75 : 1;
+            _checkCircle.Stroke = _isSelected ? null : content;
+            _checkCircle.StrokeThickness = _isSelected ? 0 : 1;
+            _checkMark.Visibility = _isSelected ? Visibility.Visible : Visibility.Collapsed;
             if (_image.Source != null)
                 _image.Opacity = _isSelected || _isHovered ? 1 : 0.5;
             _name.Opacity = _isSelected ? 1 : 0.75;
@@ -252,8 +262,15 @@ namespace Pixelery.Views
             {
                 if (element == _previewButton)
                     return;
+                if (element == _check)
+                {
+                    e.Handled = true;
+                    Toggle();
+                    return;
+                }
             }
-            Toggle();
+            e.Handled = true;
+            PreviewRequested?.Invoke(this, EventArgs.Empty);
         }
 
         private void OnKeyDown(object sender, KeyRoutedEventArgs e)
@@ -263,7 +280,10 @@ namespace Pixelery.Views
             if (e.Key is VirtualKey.Space or VirtualKey.Enter)
             {
                 e.Handled = true;
-                Toggle();
+                if (e.Key == VirtualKey.Space)
+                    Toggle();
+                else
+                    PreviewRequested?.Invoke(this, EventArgs.Empty);
             }
         }
 

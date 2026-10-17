@@ -122,6 +122,27 @@ namespace Pixelery.Views
         public static Geometry ToGeometry(string pathData) =>
             (Geometry)Microsoft.UI.Xaml.Markup.XamlBindingHelper.ConvertValue(typeof(Geometry), pathData);
 
+        public static void FollowPopupTheme(DaisyComboBoxBase select)
+        {
+            // Flowery opens its popup on the dispatcher, outside the window's visual tree.
+            select.DropDownOpened += (_, _) => select.DispatcherQueue.TryEnqueue(() =>
+            {
+                if (select.IsLoaded && select.IsDropDownOpen)
+                    SyncPopupThemes(select);
+            });
+        }
+
+        public static void SyncPopupThemes(FrameworkElement source)
+        {
+            if (source.XamlRoot is not { } root)
+                return;
+            foreach (var popup in VisualTreeHelper.GetOpenPopupsForXamlRoot(root))
+            {
+                if (popup.Child is FrameworkElement child)
+                    child.RequestedTheme = source.ActualTheme;
+            }
+        }
+
         public static TextBlock Text(string text, ResponsiveFontTier tier = ResponsiveFontTier.Primary, double opacity = 1) => Responsive(new TextBlock
         {
             Text = text,
@@ -143,6 +164,7 @@ namespace Pixelery.Views
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 Width = width
             };
+            FollowPopupTheme(select);
             if (size is { } fixedSize)
             {
                 FlowerySizeManager.SetIgnoreGlobalSize(select, true);

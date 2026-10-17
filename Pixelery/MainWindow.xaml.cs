@@ -26,6 +26,7 @@ namespace Pixelery
             SetTitleBar(Shell.TitleBarElement);
             if (GetSafeAppWindow() is { } appWindow)
             {
+                appWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "app_icon.ico"));
                 appWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
             }
 
@@ -50,7 +51,17 @@ namespace Pixelery
 
         private void OnThemeChanged(object? sender, string themeName)
         {
-            DispatcherQueue.TryEnqueue(UpdateCaptionButtonColors);
+            ((SolidColorBrush)Application.Current.Resources["TextControlSelectionHighlightColor"]).Color =
+                ((SolidColorBrush)DaisyResourceLookup.GetBrush("DaisyPrimaryBrush")).Color;
+            WindowsAccent.Refresh();
+            RootGrid.RequestedTheme = DaisyThemeManager.IsDarkTheme(themeName)
+                ? ElementTheme.Dark
+                : ElementTheme.Light;
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                Views.UiHelpers.SyncPopupThemes(RootGrid);
+                UpdateCaptionButtonColors();
+            });
         }
 
         /// <summary>

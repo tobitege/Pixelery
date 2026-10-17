@@ -53,7 +53,7 @@ namespace Pixelery.Views
         private bool _started;
         private readonly SlideOverride? _first;
 
-        public SlideshowWindow(GeneratorSettings settings, string seed, TimeSpan interval, bool fullScreen, bool crossfade, bool showInfo,
+        public SlideshowWindow(Microsoft.UI.WindowId sourceWindowId, GeneratorSettings settings, string seed, TimeSpan interval, bool crossfade, bool showInfo,
             bool startPaused = false, SlideOverride? first = null)
         {
             _paused = startPaused;
@@ -119,11 +119,8 @@ namespace Pixelery.Views
             Activated += (_, _) => _root.Focus(FocusState.Programmatic);
             Closed += OnClosed;
 
-            if (fullScreen)
-            {
-                AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
-            }
-            else if (DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary) is { } display)
+            // Place the new window on its caller's monitor before entering full screen.
+            if (DisplayArea.GetFromWindowId(sourceWindowId, DisplayAreaFallback.Nearest) is { } display)
             {
                 var work = display.WorkArea;
                 var width = (int)(work.Width * 0.7);
@@ -131,6 +128,14 @@ namespace Pixelery.Views
                 AppWindow.MoveAndResize(new RectInt32(work.X + (work.Width - width) / 2, work.Y + (work.Height - height) / 2, width, height));
             }
             _hintTimer.Start();
+        }
+
+        public void Show(bool fullScreen)
+        {
+            // Initial activation restores the overlapped presenter, so enter full screen afterward.
+            Activate();
+            if (fullScreen)
+                AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
         }
 
         private bool IsFullScreen => AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;

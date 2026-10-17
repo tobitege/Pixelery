@@ -5,6 +5,7 @@
     <UseWinUI>true</UseWinUI>
     <OutputType>WinExe</OutputType>
     <ApplicationTitle>Pixelery</ApplicationTitle>
+    <ApplicationIcon>Assets\app_icon.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <WindowsPackageType>None</WindowsPackageType>
@@ -39,7 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Assets\*.svg;Assets\Previews\*.jpg">
+    <Content Include="Assets\app_icon.png;Assets\app_icon.ico;Assets\Previews\*.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
