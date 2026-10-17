@@ -1,4 +1,18 @@
 {
+  "Update_Title": "Updates",
+  "Update_Hint": "Updates werden signiert und für diesen Benutzer installiert. Pixelery startet danach neu. Portable Dateien bleiben erhalten.",
+  "Update_Idle": "Manuell nach einer neuen Version suchen.",
+  "Update_Check": "Nach Updates suchen",
+  "Update_Checking": "Suche nach Updates…",
+  "Update_Available": "Version {0} ist verfügbar.",
+  "Update_Current": "Du hast die neueste Version.",
+  "Update_Download": "Update herunterladen",
+  "Update_Downloading": "Herunterladen und prüfen…",
+  "Update_Install": "Installieren und neu starten",
+  "Update_Ready": "Download geprüft. Bereit zur Installation.",
+  "Update_Cancelled": "Update abgebrochen.",
+  "Update_Error": "Das Update konnte nicht geprüft werden. Prüfe die Verbindung und versuche es erneut.",
+
   "App_Title": "Pixelery",
   "App_Ok": "OK",
   "App_Cancel": "Abbrechen",
@@ -293,6 +307,7 @@
   "Wm_TileSpacing": "Kachelabstand",
 
   "Preview_Another": "Noch eins",
+  "Preview_Stop": "Stop",
   "Preview_FullScreen": "Vollbild",
   "Preview_Seed": "Seed {0:x8}",
 

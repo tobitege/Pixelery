@@ -1,4 +1,18 @@
 {
+  "Update_Title": "עדכונים",
+  "Update_Hint": "העדכונים חתומים ומותקנים עבור המשתמש הזה. לאחר ההתקנה Pixelery יופעל מחדש. קובצי הגרסה הניידת נשמרים.",
+  "Update_Idle": "בדיקה ידנית של גרסה חדשה.",
+  "Update_Check": "בדיקת עדכונים",
+  "Update_Checking": "מתבצעת בדיקת עדכונים…",
+  "Update_Available": "גרסה {0} זמינה.",
+  "Update_Current": "ברשותך הגרסה העדכנית.",
+  "Update_Download": "הורדת העדכון",
+  "Update_Downloading": "הורדה ואימות…",
+  "Update_Install": "התקנה והפעלה מחדש",
+  "Update_Ready": "ההורדה אומתה. מוכן להתקנה.",
+  "Update_Cancelled": "העדכון בוטל.",
+  "Update_Error": "לא ניתן לבדוק או לאמת את העדכון. יש לבדוק את החיבור ולנסות שוב.",
+
   "App_Title": "Pixelery",
   "App_Ok": "OK",
   "App_Cancel": "ביטול",
@@ -293,6 +307,7 @@
   "Wm_TileSpacing": "מרווח אריחים",
 
   "Preview_Another": "עוד אחת",
+  "Preview_Stop": "עצור",
   "Preview_FullScreen": "מסך מלא",
   "Preview_Seed": "זרע {0:x8}",
 

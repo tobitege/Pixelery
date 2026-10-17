@@ -28,7 +28,7 @@ namespace Pixelery.Views
                 Settings.Count = (int)Math.Clamp(CountInput.Value ?? 1, 1, 1_000_000);
                 OnSettingsChanged();
             });
-            foreach (var preset in new[] { 100, 1_000, 10_000 })
+            foreach (var preset in new[] { 10, 100, 1_000, 10_000 })
             {
                 var value = preset;
                 var button = new DaisyButton { Variant = DaisyButtonVariant.Primary, Size = DaisySize.Small };

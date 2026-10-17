@@ -35,8 +35,11 @@ jobs:
         with:
           dotnet-version: '10.0.402'
 
-      - name: Restore solution
-        run: dotnet restore Pixelery.slnx
+      - name: Build Debug app with CDP
+        run: dotnet build Pixelery/Pixelery.csproj -c Debug -p:Platform=x64 -nologo
+
+      - name: Restore Release solution
+        run: dotnet restore Pixelery.slnx -p:Configuration=Release
 
       - name: Build solution
         run: dotnet build Pixelery.slnx -c Release --no-restore -nologo
@@ -46,45 +49,66 @@ jobs:
           PIXELERY_TEST_ROOT: ${{ runner.temp }}/Pixelery/Tests
         run: dotnet test Pixelery.Core.Tests/Pixelery.Core.Tests.csproj -c Release --no-build --no-restore --logger "trx;LogFileName=core.trx" --results-directory artifacts/test-results
 
+      - name: Restore release signing tool
+        run: dotnet tool restore
+
       - name: Publish Windows app
         run: dotnet publish Pixelery/Pixelery.csproj -c Release -r win-x64 -p:Platform=x64 -p:WindowsPackageType=None -o artifacts/publish/app -nologo
 
       - name: Publish Windows CLI
         run: dotnet publish Pixelery.Cli/Pixelery.Cli.csproj -c Release -r win-x64 -o artifacts/publish/cli -nologo
 
-      - name: Verify single-file outputs
+      - name: Verify Native AOT outputs
         run: |
-          $outputs = @{
-            'artifacts/publish/app' = 'Pixelery.exe'
-            'artifacts/publish/cli' = 'pixelery.exe'
-          }
-          foreach ($folder in $outputs.Keys) {
-            $files = @(Get-ChildItem -LiteralPath $folder -File -Recurse)
-            if ($files.Count -ne 1 -or $files[0].Name -cne $outputs[$folder]) {
-              throw ('Expected only {0} in {1}.' -f $outputs[$folder], $folder)
-            }
-          }
+          ./tools/Test-NativePublish.ps1 -Directory artifacts/publish/app -Executable Pixelery.exe
+          ./tools/Test-NativePublish.ps1 -Directory artifacts/publish/cli -Executable Pixelery.Cli.exe
 
       - name: Run published CLI smoke test
         env:
           PIXELERY_STATE_ROOT: ${{ runner.temp }}/Pixelery/State
-        run: ./tools/Test-CliSmoke.ps1 -CliPath artifacts/publish/cli/pixelery.exe -OutputDirectory "$env:RUNNER_TEMP/Pixelery/Tests/Smoke"
+        run: ./tools/Test-CliSmoke.ps1 -CliPath artifacts/publish/cli/Pixelery.Cli.exe -OutputDirectory "$env:RUNNER_TEMP/Pixelery/Tests/Smoke"
+
+      - name: Package Native AOT applications
+        run: |
+          ./tools/New-ReleaseArchive.ps1 -PublishDirectory artifacts/publish/app -Executable Pixelery.exe -ArchivePath artifacts/packages/Pixelery-Windows-x64.zip
+          ./tools/New-ReleaseArchive.ps1 -PublishDirectory artifacts/publish/cli -Executable Pixelery.Cli.exe -ArchivePath artifacts/packages/Pixelery.Cli-Windows-x64.zip
+
+      - name: Build NSIS installer
+        run: |
+          $nsis = ./tools/Get-Nsis.ps1 -Directory "$env:RUNNER_TEMP/Pixelery/Tools"
+          ./tools/New-Installer.ps1 -AppDirectory artifacts/publish/app -CliDirectory artifacts/publish/cli -OutputDirectory artifacts/packages -NsisPath $nsis
+
+      - name: Test per-user installer and optional CLI
+        run: |
+          $installer = Get-Item artifacts/packages/Pixelery-Setup-*-x64.exe
+          ./tools/Test-Installer.ps1 -InstallerPath $installer.FullName -AppDirectory artifacts/publish/app -CliDirectory artifacts/publish/cli -OutputDirectory "$env:RUNNER_TEMP/Pixelery/Tests/Installer"
+
+      - name: Test signed update feed with disposable keys
+        run: |
+          $keys = "$env:RUNNER_TEMP/Pixelery/Tests/UpdateKeys"
+          dotnet tool run netsparkle-generate-appcast --generate-keys --key-path $keys
+          if ($LASTEXITCODE -ne 0) { throw 'Test key generation failed.' }
+          $installer = Get-Item artifacts/packages/Pixelery-Setup-*-x64.exe
+          [xml]$props = Get-Content Directory.Build.props -Raw
+          ./tools/New-UpdateFeed.ps1 -InstallerPath $installer.FullName -Version $props.Project.PropertyGroup.Version.InnerText -OutputDirectory "$env:RUNNER_TEMP/Pixelery/Tests/UpdateFeed" -KeyDirectory $keys -PublicKeyPath "$keys/NetSparkle_Ed25519.pub"
 
       - name: Upload test results
         if: ${{ always() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: core-test-results
-          path: artifacts/test-results/*.trx
+          name: test-results
+          path: |
+            artifacts/test-results/*.trx
+            ${{ runner.temp }}/Pixelery/Tests/Installer/*/results.txt
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Upload Windows executables
+      - name: Upload Windows packages
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: Pixelery-Windows-x64-CI
           path: |
-            artifacts/publish/app/Pixelery.exe
-            artifacts/publish/cli/pixelery.exe
+            artifacts/packages/*.zip
+            artifacts/packages/Pixelery-Setup-*-x64.exe
           if-no-files-found: error
           retention-days: 7

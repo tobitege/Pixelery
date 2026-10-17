@@ -1,4 +1,18 @@
 {
+  "Update_Title": "التحديثات",
+  "Update_Hint": "التحديثات موقعة وتُثبّت لهذا المستخدم. يُعاد تشغيل Pixelery بعدها. تُحفظ ملفات النسخة المحمولة.",
+  "Update_Idle": "البحث يدوياً عن إصدار جديد.",
+  "Update_Check": "البحث عن تحديثات",
+  "Update_Checking": "جارٍ البحث عن تحديثات…",
+  "Update_Available": "الإصدار {0} متاح.",
+  "Update_Current": "لديك أحدث إصدار.",
+  "Update_Download": "تنزيل التحديث",
+  "Update_Downloading": "جارٍ التنزيل والتحقق…",
+  "Update_Install": "تثبيت وإعادة تشغيل",
+  "Update_Ready": "تم التحقق من التنزيل. جاهز للتثبيت.",
+  "Update_Cancelled": "أُلغي التحديث.",
+  "Update_Error": "تعذر البحث عن التحديث أو التحقق منه. تحقق من الاتصال وحاول مرة أخرى.",
+
   "App_Title": "Pixelery",
   "App_Ok": "OK",
   "App_Cancel": "إلغاء",
@@ -293,6 +307,7 @@
   "Wm_TileSpacing": "تباعد التجانب",
 
   "Preview_Another": "صورة أخرى",
+  "Preview_Stop": "إيقاف",
   "Preview_FullScreen": "ملء الشاشة",
   "Preview_Seed": "البذرة {0:x8}",
 

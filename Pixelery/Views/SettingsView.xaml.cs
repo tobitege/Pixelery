@@ -50,10 +50,17 @@ namespace Pixelery.Views
             RootScroller.ChangeView(null, 0, null, true);
         }
 
-        public void CommitEdit() => _snapshot = null;
+        public void CommitEdit()
+        {
+            CancelUpdateOperation();
+            CloseDropdowns();
+            _snapshot = null;
+        }
 
         public void CancelEdit()
         {
+            CancelUpdateOperation();
+            CloseDropdowns();
             var snapshot = _snapshot;
             _snapshot = null;
             if (snapshot == null)
@@ -64,6 +71,13 @@ namespace Pixelery.Views
                 _shell?.OnPreviewOptionChanged();
         }
 
+        private void CloseDropdowns()
+        {
+            ThemeDropdown.IsDropDownOpen = false;
+            SizeDropdown.IsDropDownOpen = false;
+            LanguageSelect.IsDropDownOpen = false;
+        }
+
         private void ApplyScale()
         {
             var f = SizeFactor;
@@ -71,7 +85,7 @@ namespace Pixelery.Views
             ThemeDropdown.Size = size;
             SizeDropdown.Size = size;
             LanguageSelect.Size = size;
-            foreach (var button in new[] { GitHubButton, FloweryButton, DataFolderButton })
+            foreach (var button in new[] { GitHubButton, FloweryButton, DataFolderButton, UpdateCheckButton, UpdateInstallButton, UpdateCancelButton })
                 button.Size = size;
             ThemeDropdown.Width = 240 * f;
             SizeDropdown.Width = 240 * f;
@@ -83,6 +97,7 @@ namespace Pixelery.Views
 
         public void Refresh()
         {
+            RefreshUpdateControls();
             BuildLanguageSelect();
             BuildGenerationOptions();
             BuildShortcuts();

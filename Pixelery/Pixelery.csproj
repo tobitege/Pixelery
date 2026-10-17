@@ -15,22 +15,26 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
-  <!-- dotnet publish creates one self-contained, compressed Pixelery.exe (release asset). -->
+  <!-- Release publishes native code with the self-contained Windows App SDK beside it. -->
   <PropertyGroup>
-    <PublishSingleFile>true</PublishSingleFile>
+    <PublishAot Condition="'$(Configuration)' == 'Release'">true</PublishAot>
     <SelfContained>true</SelfContained>
     <EnableMsixTooling>true</EnableMsixTooling>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <CsWinRTAotWarningLevel>2</CsWinRTAotWarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Chrome.DevTools.WinUI" Condition="'$(Configuration)' == 'Debug'" />
+    <!-- CDP currently brings SQLite 2.1.11, which has a known native-library vulnerability. -->
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Condition="'$(Configuration)' == 'Debug'" />
     <PackageReference Include="Flowery.WinUI" />
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools.WinUIAnalyzer" PrivateAssets="all" />
     <ProjectReference Include="..\Pixelery.Core\Pixelery.Core.csproj" />
+    <ProjectReference Include="..\Pixelery.Updates\Pixelery.Updates.csproj" />
     <EmbeddedResource Include="Localization\*.json" LogicalName="$(AssemblyName).Localization.%(Filename)%(Extension)" />
   </ItemGroup>
 

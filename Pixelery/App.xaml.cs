@@ -58,6 +58,12 @@ namespace Pixelery
             ApplyPersistedSettings();
 
             _window.Activate();
+#if DEBUG
+            WinUI.Diagnostics.Cdp.CdpServer.EnsureInitialized();
+            WinUI.Diagnostics.Cdp.CdpServer.Register(_window, "Pixelery");
+            WinUI.Diagnostics.Cdp.CdpServer.Start(9225);
+            _window.Closed += (_, _) => WinUI.Diagnostics.Cdp.CdpServer.Stop();
+#endif
         }
 
         private static void ApplyPersistedSettings()

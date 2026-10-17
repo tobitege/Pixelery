@@ -3,15 +3,16 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Pixelery.Views"
+    xmlns:localization="using:Pixelery.Localization"
     xmlns:daisy="using:Flowery.Controls">
 
-    <Grid x:Name="RootGrid" ColumnDefinitions="*,Auto" DataContext="{x:Bind Localization, Mode=OneWay}">
+    <Grid x:Name="RootGrid" x:DataType="localization:AppLocalization" ColumnDefinitions="*,Auto" DataContext="{x:Bind Localization, Mode=OneWay}">
 
         <!-- Configuration -->
         <ScrollViewer x:Name="ConfigScroller"
                       HorizontalScrollMode="Disabled"
                       HorizontalScrollBarVisibility="Disabled">
-            <StackPanel x:Name="ConfigStack" Padding="28,20,28,32" Spacing="20">
+            <StackPanel x:Name="ConfigStack" Padding="8,8,28,32" Spacing="20">
 
                 <!-- Hero: title, short explanation and a freshly generated artwork as backdrop -->
                 <Grid x:Name="Hero"

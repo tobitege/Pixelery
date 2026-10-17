@@ -1,4 +1,18 @@
 {
+  "Update_Title": "Güncellemeler",
+  "Update_Hint": "İmzalı güncellemeler bu kullanıcı için yüklenir. Ardından Pixelery yeniden başlar. Taşınabilir dosyalar korunur.",
+  "Update_Idle": "Yeni sürümü elle denetleyin.",
+  "Update_Check": "Güncellemeleri denetle",
+  "Update_Checking": "Güncellemeler denetleniyor…",
+  "Update_Available": "{0} sürümü kullanılabilir.",
+  "Update_Current": "En güncel sürümü kullanıyorsunuz.",
+  "Update_Download": "Güncellemeyi indir",
+  "Update_Downloading": "İndiriliyor ve doğrulanıyor…",
+  "Update_Install": "Yükle ve yeniden başlat",
+  "Update_Ready": "İndirme doğrulandı. Yüklemeye hazır.",
+  "Update_Cancelled": "Güncelleme iptal edildi.",
+  "Update_Error": "Güncelleme denetlenemedi veya doğrulanamadı. Bağlantınızı kontrol edip yeniden deneyin.",
+
   "App_Title": "Pixelery",
   "App_Ok": "OK",
   "App_Cancel": "İptal",
@@ -293,6 +307,7 @@
   "Wm_TileSpacing": "Döşeme aralığı",
 
   "Preview_Another": "Bir tane daha",
+  "Preview_Stop": "Durdur",
   "Preview_FullScreen": "Tam ekran",
   "Preview_Seed": "tohum {0:x8}",
 

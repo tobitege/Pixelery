@@ -1,4 +1,18 @@
 {
+  "Update_Title": "更新",
+  "Update_Hint": "署名付きの更新をこのユーザー用にインストールします。その後 Pixelery が再起動します。ポータブル版のファイルは保持されます。",
+  "Update_Idle": "新しいバージョンを手動で確認します。",
+  "Update_Check": "更新を確認",
+  "Update_Checking": "更新を確認中…",
+  "Update_Available": "バージョン {0} を利用できます。",
+  "Update_Current": "最新バージョンです。",
+  "Update_Download": "更新をダウンロード",
+  "Update_Downloading": "ダウンロードと検証中…",
+  "Update_Install": "インストールして再起動",
+  "Update_Ready": "ダウンロードを検証しました。インストールできます。",
+  "Update_Cancelled": "更新をキャンセルしました。",
+  "Update_Error": "更新の確認または検証に失敗しました。接続を確認して再試行してください。",
+
   "App_Title": "Pixelery",
   "App_Ok": "OK",
   "App_Cancel": "キャンセル",
@@ -293,6 +307,7 @@
   "Wm_TileSpacing": "タイルの間隔",
 
   "Preview_Another": "別の画像",
+  "Preview_Stop": "停止",
   "Preview_FullScreen": "全画面表示",
   "Preview_Seed": "シード {0:x8}",
 

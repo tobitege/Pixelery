@@ -1,4 +1,18 @@
 {
+  "Update_Title": "更新",
+  "Update_Hint": "更新经过签名并为当前用户安装。安装后 Pixelery 将重新启动。便携版文件会保留。",
+  "Update_Idle": "手动检查新版本。",
+  "Update_Check": "检查更新",
+  "Update_Checking": "正在检查更新…",
+  "Update_Available": "版本 {0} 可用。",
+  "Update_Current": "已是最新版本。",
+  "Update_Download": "下载更新",
+  "Update_Downloading": "正在下载并验证…",
+  "Update_Install": "安装并重新启动",
+  "Update_Ready": "下载验证完成，可以安装。",
+  "Update_Cancelled": "更新已取消。",
+  "Update_Error": "无法检查或验证更新。请检查网络连接后重试。",
+
   "App_Title": "Pixelery",
   "App_Ok": "OK",
   "App_Cancel": "取消",
@@ -293,6 +307,7 @@
   "Wm_TileSpacing": "平铺间距",
 
   "Preview_Another": "再来一张",
+  "Preview_Stop": "停止",
   "Preview_FullScreen": "全屏",
   "Preview_Seed": "种子 {0:x8}",
 

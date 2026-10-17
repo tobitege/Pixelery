@@ -28,6 +28,16 @@ namespace Pixelery.Views
         private DispatcherQueueTimer? _previewSlideshowTimer;
         private SlideshowWindow? _previewFullScreen;
         private bool _isPreviewRendering;
+        private bool _previewSlideshowRunning;
+
+        private bool HasOpenDialog => SettingsDialog?.IsOpen == true || PreviewDialog?.IsOpen == true || WatermarkDialog?.IsOpen == true;
+
+        private void UpdateDialogInteractivity()
+        {
+            var enabled = !HasOpenDialog;
+            Generator.IsEnabled = enabled;
+            SettingsButton.IsEnabled = enabled;
+        }
 
         public AppShell()
         {
@@ -56,7 +66,8 @@ namespace Pixelery.Views
             }));
             KeyboardAccelerators.Add(CreateAccelerator(VirtualKey.Enter, VirtualKeyModifiers.Control, (_, a) =>
             {
-                Generator.StartFromButton();
+                if (!HasOpenDialog)
+                    Generator.StartFromButton();
                 a.Handled = true;
             }));
             KeyboardAccelerators.Add(CreateAccelerator(VirtualKey.Escape, VirtualKeyModifiers.None, (_, a) =>
@@ -73,6 +84,7 @@ namespace Pixelery.Views
 
         public void Shutdown()
         {
+            SettingsPage?.CancelUpdateOperation();
             if (PreviewSlideshowCheck != null)
                 PreviewSlideshowCheck.IsChecked = false;
             UiTimers.Cancel(_previewSlideshowTimer);
@@ -82,8 +94,20 @@ namespace Pixelery.Views
         }
 
         /// <summary>Shows a spinner in the title bar while a run is active.</summary>
-        public void SetRunning(bool running) =>
+        public void SetRunning(bool running)
+        {
             RunIndicator.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
+            SettingsPage?.RefreshUpdateControls();
+        }
+
+        public bool CanInstallUpdate => !Generator.IsRunning;
+
+        public void CloseForUpdate()
+        {
+            _settingsAccepted = true;
+            SettingsDialog.IsOpen = false;
+            _window?.Close();
+        }
 
         private static KeyboardAccelerator CreateAccelerator(VirtualKey key, VirtualKeyModifiers modifiers, TypedEventHandler<KeyboardAccelerator, KeyboardAcceleratorInvokedEventArgs> handler)
         {
@@ -105,10 +129,11 @@ namespace Pixelery.Views
                 Tip(WatermarkCloseButton, L("App_Close"));
             if (PreviewFullScreenButton != null)
                 Tip(PreviewFullScreenButton, L("Preview_FullScreen"));
+            UpdatePreviewActionText();
             if (_previewStyle != null)
             {
                 PreviewDescription.Text = L($"Style_{_previewStyle.Id}");
-                PreviewCategory.Content = L($"Category_{_previewStyle.Category}");
+                PreviewCategory.BadgeContent = L($"Category_{_previewStyle.Category}");
             }
         }
 
@@ -166,10 +191,12 @@ namespace Pixelery.Views
             PreviewSlideshowSeconds.Increment = 1;
             PreviewDialog!.RegisterPropertyChangedCallback(DaisyModal.IsOpenProperty, (_, _) =>
             {
+                UpdateDialogInteractivity();
                 if (!PreviewDialog.IsOpen)
                 {
                     UiTimers.Cancel(_previewSlideshowTimer);
                     _previewSlideshowTimer = null;
+                    _previewSlideshowRunning = false;
                     PreviewSlideshowCheck.IsChecked = false;
                     _previewCts?.Cancel();
                 }
@@ -177,15 +204,21 @@ namespace Pixelery.Views
             PreviewSlideshowSeconds.RegisterPropertyChangedCallback(DaisyNumericUpDown.ValueProperty,
                 (_, _) => SchedulePreviewSlideshow());
             PreviewSlideshowCheck.RegisterPropertyChangedCallback(DaisyCheckBox.IsCheckedProperty,
-                (_, _) => SchedulePreviewSlideshow());
+                (_, _) =>
+                {
+                    if (PreviewSlideshowCheck.IsChecked != true)
+                        _previewSlideshowRunning = false;
+                    UpdatePreviewActionText();
+                    SchedulePreviewSlideshow();
+                });
             UpdateLocalizedChrome();
         }
 
         public void OpenSettings()
         {
-            EnsureSettingsDialog();
-            if (SettingsDialog.IsOpen)
+            if (HasOpenDialog)
                 return;
+            EnsureSettingsDialog();
             _settingsAccepted = false;
             SettingsPage.BeginEdit();
             UpdateDialogSizes();
@@ -209,6 +242,7 @@ namespace Pixelery.Views
         /// </summary>
         private void OnSettingsDialogOpenChanged()
         {
+            UpdateDialogInteractivity();
             if (SettingsDialog.IsOpen)
                 return;
             if (_settingsAccepted)
@@ -228,11 +262,14 @@ namespace Pixelery.Views
         /// <summary>Opens the watermark editor on a copy; <paramref name="commit"/> receives the result on OK.</summary>
         public void OpenWatermarkEditor(WatermarkSettings current, GeneratorSettings generator, Action<WatermarkSettings> commit)
         {
+            if (HasOpenDialog)
+                return;
             if (WatermarkDialog == null)
             {
                 FindName(nameof(WatermarkDialog));
                 WatermarkDialogFrame.BorderBrush = WindowsAccent.Brush;
                 WatermarkEditorView.Shell = this;
+                WatermarkDialog!.RegisterPropertyChangedCallback(DaisyModal.IsOpenProperty, (_, _) => UpdateDialogInteractivity());
                 UpdateLocalizedChrome();
             }
             _watermarkCommit = commit;
@@ -260,6 +297,8 @@ namespace Pixelery.Views
 
         public void ShowStylePreview(ArtStyle style)
         {
+            if (HasOpenDialog)
+                return;
             EnsurePreviewDialog();
             _previewStyle = style;
             PreviewTitle.Text = style.Name;
@@ -269,13 +308,37 @@ namespace Pixelery.Views
             _ = RenderPreviewAsync();
         }
 
-        private void PreviewShuffle_Click(object sender, RoutedEventArgs e) => _ = RenderPreviewAsync();
+        private void PreviewShuffle_Click(object sender, RoutedEventArgs e)
+        {
+            if (PreviewSlideshowCheck.IsChecked == true)
+            {
+                _previewSlideshowRunning = !_previewSlideshowRunning;
+                UpdatePreviewActionText();
+                if (!_previewSlideshowRunning)
+                {
+                    UiTimers.Cancel(_previewSlideshowTimer);
+                    _previewSlideshowTimer = null;
+                    _previewCts?.Cancel();
+                    return;
+                }
+            }
+            _ = RenderPreviewAsync();
+        }
+
+        private void UpdatePreviewActionText()
+        {
+            if (PreviewShuffleButton == null)
+                return;
+            var slideshow = PreviewSlideshowCheck.IsChecked == true;
+            PreviewShuffleButton.Content = L(slideshow ? (_previewSlideshowRunning ? "Preview_Stop" : "Side_Start") : "Preview_Another");
+            PreviewShuffleButton.IconData = Icon(slideshow ? (_previewSlideshowRunning ? "AppIconStop" : "AppIconPlay") : "AppIconShuffle");
+        }
 
         private void SchedulePreviewSlideshow()
         {
             UiTimers.Cancel(_previewSlideshowTimer);
             _previewSlideshowTimer = null;
-            if (PreviewDialog?.IsOpen != true || PreviewSlideshowCheck.IsChecked != true || _isPreviewRendering || _previewFullScreen != null)
+            if (PreviewDialog?.IsOpen != true || !_previewSlideshowRunning || _isPreviewRendering || _previewFullScreen != null)
                 return;
 
             var seconds = Math.Clamp(decimal.Truncate(PreviewSlideshowSeconds.Value ?? 3), 1, 999);
@@ -306,7 +369,7 @@ namespace Pixelery.Views
             var seconds = Math.Clamp(decimal.Truncate(PreviewSlideshowSeconds.Value ?? 3), 1, 999);
             var window = new SlideshowWindow(settings, Random.Shared.Next().ToString(CultureInfo.InvariantCulture),
                 TimeSpan.FromSeconds((double)seconds), fullScreen: true, AppSettings.SlideshowCrossfade,
-                AppSettings.SlideshowShowInfo, startPaused: PreviewSlideshowCheck.IsChecked != true,
+                AppSettings.SlideshowShowInfo, startPaused: !_previewSlideshowRunning,
                 first: _previewSlide is { } slide && slide.Style == style ? slide : null);
             _previewFullScreen = window;
             UiTimers.Cancel(_previewSlideshowTimer);
@@ -317,6 +380,8 @@ namespace Pixelery.Views
                 if (ReferenceEquals(_previewFullScreen, window))
                 {
                     _previewFullScreen = null;
+                    _previewSlideshowRunning = PreviewSlideshowCheck.IsChecked == true && !window.IsPaused;
+                    UpdatePreviewActionText();
                     SchedulePreviewSlideshow();
                 }
             };

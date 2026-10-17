@@ -135,6 +135,8 @@ namespace Pixelery.Views
 
         private bool IsFullScreen => AppWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen;
 
+        public bool IsPaused => _paused;
+
         private static Image NewLayer() => new() { Stretch = Stretch.UniformToFill, Opacity = 0 };
 
         private static Border Overlay(UIElement child, HorizontalAlignment horizontal, VerticalAlignment vertical) => new()
