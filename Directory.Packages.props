@@ -7,14 +7,14 @@
     <PackageVersion Include="NetSparkleUpdater.SparkleUpdater" Version="3.1.0" />
     <PackageVersion Include="Chrome.DevTools.WinUI" Version="0.1.0" />
     <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.14" />
-    <PackageVersion Include="Flowery.WinUI" Version="1.3.2" />
+    <PackageVersion Include="Flowery.WinUI" Version="1.4.0" />
     <PackageVersion Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools.WinUIAnalyzer" Version="0.7.1" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
-    <PackageVersion Include="SkiaSharp" Version="3.119.2" />
-    <PackageVersion Include="SkiaSharp.HarfBuzz" Version="3.119.2" />
+    <PackageVersion Include="SkiaSharp" Version="4.153.1" />
+    <PackageVersion Include="SkiaSharp.HarfBuzz" Version="4.153.1" />
   </ItemGroup>
 </Project>

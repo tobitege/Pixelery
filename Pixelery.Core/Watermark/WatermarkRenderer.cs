@@ -30,7 +30,7 @@ public static class WatermarkRenderer
             return image;
         using var surface = SKSurface.Create(new SKImageInfo(image.Width, image.Height, SKColorType.Rgba8888, SKAlphaType.Premul))
             ?? throw new InvalidOperationException("Could not allocate the watermark surface.");
-        surface.Canvas.DrawImage(image, 0, 0);
+        surface.Canvas.DrawImage(image, 0, 0, new SKSamplingOptions(SKFilterMode.Nearest));
         Draw(surface.Canvas, image.Width, image.Height, settings, values, seed);
         return surface.Snapshot();
     }

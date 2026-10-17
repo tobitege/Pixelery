@@ -102,11 +102,11 @@ public sealed class RotatingSnakesStyle : ArtStyle
 
     private static SKPath Sector(float cx, float cy, float inner, float outer, float startDeg, float sweepDeg)
     {
-        var path = new SKPath();
-        path.ArcTo(new SKRect(cx - outer, cy - outer, cx + outer, cy + outer), startDeg, sweepDeg, true);
-        path.ArcTo(new SKRect(cx - inner, cy - inner, cx + inner, cy + inner), startDeg + sweepDeg, -sweepDeg, false);
-        path.Close();
-        return path;
+        using var builder = new SKPathBuilder();
+        builder.ArcTo(new SKRect(cx - outer, cy - outer, cx + outer, cy + outer), startDeg, sweepDeg, true);
+        builder.ArcTo(new SKRect(cx - inner, cy - inner, cx + inner, cy + inner), startDeg + sweepDeg, -sweepDeg, false);
+        builder.Close();
+        return builder.Detach();
     }
 }
 
@@ -217,16 +217,17 @@ public sealed class FraserSpiralStyle : ArtStyle
                 {
                     if ((r + s) % 2 == 0)
                         continue;
-                    using var path = new SKPath();
+                    using var builder = new SKPathBuilder();
                     var outer = (r + 1) * ringStep;
                     var inner = r * ringStep;
                     var start = s * 360f / sectors;
-                    path.ArcTo(new SKRect(center.X - outer, center.Y - outer, center.X + outer, center.Y + outer), start, 360f / sectors, true);
+                    builder.ArcTo(new SKRect(center.X - outer, center.Y - outer, center.X + outer, center.Y + outer), start, 360f / sectors, true);
                     if (inner > 0)
-                        path.ArcTo(new SKRect(center.X - inner, center.Y - inner, center.X + inner, center.Y + inner), start + 360f / sectors, -360f / sectors, false);
+                        builder.ArcTo(new SKRect(center.X - inner, center.Y - inner, center.X + inner, center.Y + inner), start + 360f / sectors, -360f / sectors, false);
                     else
-                        path.LineTo(center);
-                    path.Close();
+                        builder.LineTo(center);
+                    builder.Close();
+                    using var path = builder.Detach();
                     ctx.Canvas.DrawPath(path, paint);
                 }
             }
@@ -323,8 +324,9 @@ public sealed class OuchiStyle : ArtStyle
             var radius = discs == 1 ? ctx.Min * ctx.R(0.2f, 0.32f) : ctx.Min * ctx.R(0.1f, 0.2f);
             var x = discs == 1 ? ctx.Width / 2f : ctx.R(radius, ctx.Width - radius);
             var y = discs == 1 ? ctx.Height / 2f : ctx.R(radius, ctx.Height - radius);
-            using var clip = new SKPath();
-            clip.AddCircle(x, y, radius);
+            using var builder = new SKPathBuilder();
+            builder.AddCircle(x, y, radius);
+            using var clip = builder.Detach();
             ctx.Canvas.Save();
             ctx.Canvas.ClipPath(clip, antialias: true);
             DrawChecks(ctx, angle + 90, cellLong, cellShort, dark, light);
@@ -397,8 +399,9 @@ public sealed class KanizsaStyle : ArtStyle
             var outlinePoints = Polygon(center, radius * 1.05f, sides, rotation + 180f / sides);
             using var stroke = ctx.Stroke(inducer, Math.Max(1.5f, radius * 0.025f));
             stroke.StrokeJoin = SKStrokeJoin.Miter;
-            using var path = new SKPath();
-            path.AddPoly(outlinePoints, true);
+            using var builder = new SKPathBuilder();
+            builder.AddPoly(outlinePoints, true);
+            using var path = builder.Detach();
             ctx.Canvas.DrawPath(path, stroke);
         }
 
@@ -408,8 +411,9 @@ public sealed class KanizsaStyle : ArtStyle
 
         // Covering the polygon with the background turns the discs into pac-men and cuts the outline.
         using var cover = ctx.Fill(background);
-        using var polygon = new SKPath();
-        polygon.AddPoly(vertices, true);
+        using var polygonBuilder = new SKPathBuilder();
+        polygonBuilder.AddPoly(vertices, true);
+        using var polygon = polygonBuilder.Detach();
         ctx.Canvas.DrawPath(polygon, cover);
     }
 
@@ -504,8 +508,8 @@ public sealed class ImpossibleFiguresStyle : ArtStyle
 
     private static SKPath Hexagon(SKPoint p, float u)
     {
-        var path = new SKPath();
-        path.AddPoly(
+        using var builder = new SKPathBuilder();
+        builder.AddPoly(
         [
             new SKPoint(p.X, p.Y - u),
             new SKPoint(p.X + Cos30 * u, p.Y - u / 2),
@@ -514,7 +518,7 @@ public sealed class ImpossibleFiguresStyle : ArtStyle
             new SKPoint(p.X - Cos30 * u, p.Y + u / 2),
             new SKPoint(p.X - Cos30 * u, p.Y - u / 2)
         ], true);
-        return path;
+        return builder.Detach();
     }
 
     private static void DrawCube(RenderContext ctx, SKPoint p, float u, SKColor top, SKColor left, SKColor right, SKColor edge, bool outline)
@@ -532,8 +536,9 @@ public sealed class ImpossibleFiguresStyle : ArtStyle
 
         void Face(SKPoint[] pts, SKColor color)
         {
-            using var path = new SKPath();
-            path.AddPoly(pts, true);
+            using var builder = new SKPathBuilder();
+            builder.AddPoly(pts, true);
+            using var path = builder.Detach();
             // A hairline in the face color hides seams between neighbouring cubes.
             using var fill = new SKPaint { IsAntialias = true, Color = color, Style = SKPaintStyle.StrokeAndFill, StrokeWidth = 1f };
             ctx.Canvas.DrawPath(path, fill);

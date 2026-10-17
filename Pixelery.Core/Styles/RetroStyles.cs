@@ -88,8 +88,9 @@ public sealed class SynthwaveStyle : ArtStyle
                 points.Add(new SKPoint(x, horizon - h));
             }
             points.Add(new SKPoint(ctx.Width + 10, horizon));
-            using var path = new SKPath();
-            path.AddPoly([.. points], true);
+            using var builder = new SKPathBuilder();
+            builder.AddPoly([.. points], true);
+            using var path = builder.Detach();
             using var fill = ctx.Fill(ColorMath.Darken(sky[0], layer == 0 ? 0.02f : -0.06f));
             ctx.Canvas.DrawPath(path, fill);
             using var edge = ctx.Stroke(gridColor.WithAlpha(layer == 0 ? (byte)140 : (byte)90), Math.Max(1, ctx.U * 1.5f));
@@ -103,23 +104,24 @@ public sealed class SynthwaveStyle : ArtStyle
             ctx.Canvas.DrawRect(0, horizon, ctx.Width, ctx.Height - horizon, paint);
         }
 
-        using var gridPath = new SKPath();
+        using var gridBuilder = new SKPathBuilder();
         var vanishX = ctx.Width / 2f;
         var lines = ctx.Count(12, 30);
         for (var i = -lines; i <= lines; i++)
         {
             var bottomX = vanishX + i * ctx.Width * 2.2f / lines;
-            gridPath.MoveTo(vanishX + i * ctx.Width * 0.01f, horizon);
-            gridPath.LineTo(bottomX, ctx.Height);
+            gridBuilder.MoveTo(vanishX + i * ctx.Width * 0.01f, horizon);
+            gridBuilder.LineTo(bottomX, ctx.Height);
         }
         var rows = ctx.Count(8, 20);
         for (var i = 1; i <= rows; i++)
         {
             var z = i / (float)rows;
             var y = horizon + (ctx.Height - horizon) * z * z;
-            gridPath.MoveTo(0, y);
-            gridPath.LineTo(ctx.Width, y);
+            gridBuilder.MoveTo(0, y);
+            gridBuilder.LineTo(ctx.Width, y);
         }
+        using var gridPath = gridBuilder.Detach();
         ctx.Canvas.Save();
         ctx.Canvas.ClipRect(new SKRect(0, horizon, ctx.Width, ctx.Height));
         using (var glowMask = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, ctx.U * 6))
@@ -163,7 +165,7 @@ public sealed class GlitchStyle : ArtStyle
         {
             using var filter = SKColorFilter.CreateColorMatrix(channels[i]);
             using var paint = new SKPaint { ColorFilter = filter, BlendMode = SKBlendMode.Plus };
-            ctx.Canvas.DrawImage(image, offsets[i], ctx.R(-shift, shift) * 0.3f, paint);
+            ctx.Canvas.DrawImage(image, offsets[i], ctx.R(-shift, shift) * 0.3f, new SKSamplingOptions(SKFilterMode.Nearest), paint);
         }
 
         // Displaced horizontal slices.
@@ -175,7 +177,7 @@ public sealed class GlitchStyle : ArtStyle
             var h = ctx.Height * ctx.R(0.005f, 0.06f);
             var dx = ctx.Width * ctx.R(-0.15f, 0.15f);
             var src = new SKRect(0, y, ctx.Width, y + h);
-            ctx.Canvas.DrawImage(image, src, new SKRect(dx, y, ctx.Width + dx, y + h), plain);
+            ctx.Canvas.DrawImage(image, src, new SKRect(dx, y, ctx.Width + dx, y + h), new SKSamplingOptions(SKFilterMode.Nearest), plain);
         }
 
         // Pixel smears: a one pixel column stretched sideways.
@@ -186,7 +188,7 @@ public sealed class GlitchStyle : ArtStyle
             var y = ctx.R(0, ctx.Height);
             var h = ctx.Height * ctx.R(0.02f, 0.15f);
             var len = ctx.Width * ctx.R(0.1f, 0.5f);
-            ctx.Canvas.DrawImage(image, new SKRect(x, y, x + 1, y + h), new SKRect(x, y, x + len, y + h), plain);
+            ctx.Canvas.DrawImage(image, new SKRect(x, y, x + 1, y + h), new SKRect(x, y, x + len, y + h), new SKSamplingOptions(SKFilterMode.Nearest), plain);
         }
 
         // Inverted and colored blocks.
@@ -232,11 +234,12 @@ public sealed class GlitchStyle : ArtStyle
                     break;
                 default:
                 {
-                    using var path = new SKPath();
-                    path.MoveTo(ctx.R(0, ctx.Width), ctx.R(0, ctx.Height));
-                    path.LineTo(ctx.R(0, ctx.Width), ctx.R(0, ctx.Height));
-                    path.LineTo(ctx.R(0, ctx.Width), ctx.R(0, ctx.Height));
-                    path.Close();
+                    using var builder = new SKPathBuilder();
+                    builder.MoveTo(ctx.R(0, ctx.Width), ctx.R(0, ctx.Height));
+                    builder.LineTo(ctx.R(0, ctx.Width), ctx.R(0, ctx.Height));
+                    builder.LineTo(ctx.R(0, ctx.Width), ctx.R(0, ctx.Height));
+                    builder.Close();
+                    using var path = builder.Detach();
                     ctx.Canvas.DrawPath(path, paint);
                     break;
                 }
@@ -377,14 +380,14 @@ public sealed class NeonGlowStyle : ArtStyle
 
     private static SKPath Shape(RenderContext ctx)
     {
-        var path = new SKPath();
+        using var builder = new SKPathBuilder();
         var c = new SKPoint(ctx.R(0.2f, 0.8f) * ctx.Width, ctx.R(0.2f, 0.8f) * ctx.Height);
         var r = ctx.Min * ctx.R(0.08f, 0.3f);
         var sides = ctx.Pick(new[] { 0, 3, 4, 6 });
         if (sides == 0)
         {
-            path.AddCircle(c.X, c.Y, r);
-            return path;
+            builder.AddCircle(c.X, c.Y, r);
+            return builder.Detach();
         }
         var rotation = ctx.R(0, MathF.Tau);
         for (var k = 0; k < sides; k++)
@@ -392,11 +395,11 @@ public sealed class NeonGlowStyle : ArtStyle
             var a = rotation + k * MathF.Tau / sides;
             var p = new SKPoint(c.X + MathF.Cos(a) * r, c.Y + MathF.Sin(a) * r);
             if (k == 0)
-                path.MoveTo(p);
+                builder.MoveTo(p);
             else
-                path.LineTo(p);
+                builder.LineTo(p);
         }
-        path.Close();
-        return path;
+        builder.Close();
+        return builder.Detach();
     }
 }

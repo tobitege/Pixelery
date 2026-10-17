@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Upgrade SkiaSharp and SkiaSharp.HarfBuzz together to 4.153.1 and migrate rendering to the current path and image APIs.
+- Update Flowery.WinUI to 1.4.0.
+
+### Fixed
+
+- Use continuous opacity for Halftone color transitions instead of changing subpixel dot sizes.
+
 ## [0.2.0] - 2026-10-17
 
 ### Added
