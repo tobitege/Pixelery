@@ -13,6 +13,7 @@ Built with [Flowery.WinUI](https://github.com/tobitege/Flowery.WinUI) (NuGet) an
 | `Pixelery` | WinUI 3 app (Daisy controls, themes, sizes, 12 languages) |
 | `Pixelery.Core` | Generator engine without UI dependencies: styles, palettes, sizes, file name schema, watermarks, encoding, parallel runner |
 | `Pixelery.Cli` | `pixelery` command line tool: generation, single images, desktop background, screen saver |
+| `Pixelery.Core.Tests` | Tests for palette files, settings, safe file names, and Truchet rendering |
 
 ## Features at a glance
 
@@ -162,6 +163,20 @@ bin/Debug/Pixelery/net10.0-windows10.0.19041/win-x64/Pixelery.exe
 ```
 
 ## Release builds
+
+Pull requests and pushes to `main` run Windows CI. It builds the solution, runs the Core tests, and publishes the app and CLI.
+The CLI smoke test checks the published version, reproducible PNG output, image dimensions, and parallel batch generation.
+CI uploads the test results and both executables as artifacts. It does not create a release or a tag.
+
+Run the Core tests locally with `dotnet test Pixelery.Core.Tests/Pixelery.Core.Tests.csproj -c Release`.
+Test files stay under `%LOCALAPPDATA%\Pixelery\Tests` unless `PIXELERY_TEST_ROOT` specifies another directory.
+The caller owns these test files and can remove them after inspection.
+
+After publishing the CLI, run the smoke test from PowerShell 7:
+
+```powershell
+./tools/Test-CliSmoke.ps1 -CliPath ./publish-cli/pixelery.exe -OutputDirectory "$env:LOCALAPPDATA/Pixelery/Tests/Smoke"
+```
 
 Both projects publish to a single self-contained, compressed exe (no .NET or Windows App SDK install needed):
 

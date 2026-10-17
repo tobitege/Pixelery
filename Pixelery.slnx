@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="Pixelery.Cli/Pixelery.Cli.csproj" />
   <Project Path="Pixelery.Core/Pixelery.Core.csproj" />
+  <Project Path="Pixelery.Core.Tests/Pixelery.Core.Tests.csproj" />
   <Project Path="Pixelery/Pixelery.csproj" />
 </Solution>
