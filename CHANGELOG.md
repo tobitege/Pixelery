@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Upgrade SkiaSharp and SkiaSharp.HarfBuzz together to 4.153.1 and migrate rendering to the current path and image APIs.
+- Update Flowery.WinUI to 1.4.0.
 
 ### Fixed
 
