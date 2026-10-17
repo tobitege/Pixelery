@@ -12,11 +12,18 @@ public sealed partial class SettingsView
     private static readonly HttpClient UpdateHttp = new() { Timeout = TimeSpan.FromMinutes(10) };
     private readonly UpdateClient _updates = new(UpdateHttp, UpdateClient.PublicKey);
     private UpdateRelease? _release;
-    private string? _installer;
+    private UpdateDownload? _installer;
     private CancellationTokenSource? _updateOperation;
     private string _updateStatusKey = "Update_Idle";
 
-    public void CancelUpdateOperation() => _updateOperation?.Cancel();
+    public void CancelUpdateOperation()
+    {
+        _updateOperation?.Cancel();
+        if (_installer != null)
+            _updateStatusKey = "Update_Cancelled";
+        _installer?.Dispose();
+        _installer = null;
+    }
 
     public void RefreshUpdateControls()
     {
@@ -40,6 +47,7 @@ public sealed partial class SettingsView
         using var operation = new CancellationTokenSource();
         _updateOperation = operation;
         _release = null;
+        _installer?.Dispose();
         _installer = null;
         _updateStatusKey = "Update_Checking";
         RefreshUpdateControls();
@@ -83,20 +91,26 @@ public sealed partial class SettingsView
                         UpdateProgress.Value = value;
                 });
                 _installer = await _updates.DownloadAsync(release, AppSettings.StateDirectory, progress, operation.Token);
+                operation.Token.ThrowIfCancellationRequested();
                 _updateStatusKey = "Update_Ready";
             }
             else
             {
-                using var installer = _updates.StartInstaller(_installer, release, Environment.ProcessId);
+                using var installer = _updates.StartInstaller(_installer.Path, release, Environment.ProcessId);
+                _installer.HandOffToInstaller();
+                _installer = null;
                 _shell.CloseForUpdate();
             }
         }
         catch (OperationCanceledException) when (operation.IsCancellationRequested)
         {
+            _installer?.Dispose();
+            _installer = null;
             _updateStatusKey = "Update_Cancelled";
         }
         catch (Exception)
         {
+            _installer?.Dispose();
             _installer = null;
             _updateStatusKey = "Update_Error";
         }

@@ -30,25 +30,29 @@ try {
     function Escape-Nsis([string]$Value) {
         $Value.Replace('$', '$$').Replace('"', '$\"')
     }
-    function Write-Payload([string]$Root, [string]$Name) {
-        $files = @(Get-ChildItem -LiteralPath $Root -Recurse -File | Where-Object Extension -ne '.pdb' | Sort-Object FullName)
-        $commands = [Collections.Generic.List[string]]::new()
-        $manifest = [Collections.Generic.List[string]]::new()
-        foreach ($file in $files) {
-            $relative = [IO.Path]::GetRelativePath($Root, $file.FullName)
-            if ($relative -match '[*?:"<>|]' -or $relative.Contains('..')) { throw 'Unsafe payload filename.' }
-            $destination = Join-Path $Name $relative
-            $parent = Split-Path -Parent $destination
-            $commands.Add('SetOutPath "$INSTDIR\' + (Escape-Nsis $parent) + '"')
-            $commands.Add('File "' + (Escape-Nsis $file.FullName) + '"')
-            $commands.Add('IfErrors install_failed')
-            $manifest.Add($destination)
+    $payload = [Collections.Generic.SortedDictionary[string,string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($root in @($app, $cli)) {
+        foreach ($file in (Get-ChildItem -LiteralPath $root -Recurse -File | Where-Object Extension -ne '.pdb')) {
+            $relative = [IO.Path]::GetRelativePath($root, $file.FullName)
+            if ($relative -match '[*?:"<>|]' -or $relative.Contains('..') -or $relative -in @('Uninstall.exe', 'files.lst', 'files-app.lst', 'files-cli.lst')) { throw 'Unsafe payload filename.' }
+            if ($payload.ContainsKey($relative)) {
+                if ((Get-FileHash -LiteralPath $payload[$relative]).Hash -ne (Get-FileHash -LiteralPath $file.FullName).Hash) {
+                    throw ('Conflicting shared payload file: {0}' -f $relative)
+                }
+            } else {
+                $payload.Add($relative, $file.FullName)
+            }
         }
-        [IO.File]::WriteAllLines((Join-Path $build ($Name + '.nsh')), $commands, [Text.UTF8Encoding]::new($true))
-        [IO.File]::WriteAllLines((Join-Path $build ($Name + '.lst')), $manifest, [Text.Encoding]::Unicode)
     }
-    Write-Payload $app 'app'
-    Write-Payload $cli 'cli'
+    $commands = [Collections.Generic.List[string]]::new()
+    foreach ($file in $payload.GetEnumerator()) {
+        $parent = Split-Path -Parent $file.Key
+        $commands.Add('SetOutPath "$Stage\' + (Escape-Nsis $parent) + '"')
+        $commands.Add('File "' + (Escape-Nsis $file.Value) + '"')
+        $commands.Add('IfErrors install_failed')
+    }
+    [IO.File]::WriteAllLines((Join-Path $build 'payload.nsh'), $commands, [Text.UTF8Encoding]::new($true))
+    [IO.File]::WriteAllLines((Join-Path $build 'payload.lst'), $payload.Keys, [Text.Encoding]::Unicode)
     $installer = Join-Path $output ('Pixelery-Setup-{0}-x64.exe' -f $Version)
     $script = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '../installer/Pixelery.nsi')).Path
     $arguments = @('/V3', '/WX', '/INPUTCHARSET', 'UTF8', ('/DPRODUCT_VERSION=' + $Version), ('/DBUILD_DIR=' + $build), ('/DOUTPUT_FILE=' + $installer), $script)

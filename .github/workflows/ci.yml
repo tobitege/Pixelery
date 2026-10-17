@@ -38,6 +38,9 @@ jobs:
       - name: Build Debug app with CDP
         run: dotnet build Pixelery/Pixelery.csproj -c Debug -p:Platform=x64 -nologo
 
+      - name: Test palette preview transitions in the Debug app
+        run: ./tools/Test-PalettePreviews.ps1 -AppPath bin/Debug/Pixelery/net10.0-windows10.0.19041/win-x64/Pixelery.exe -OutputDirectory "$env:RUNNER_TEMP/Pixelery/Tests/PalettePreviews"
+
       - name: Restore Release solution
         run: dotnet restore Pixelery.slnx -p:Configuration=Release
 
@@ -78,7 +81,7 @@ jobs:
           $nsis = ./tools/Get-Nsis.ps1 -Directory "$env:RUNNER_TEMP/Pixelery/Tools"
           ./tools/New-Installer.ps1 -AppDirectory artifacts/publish/app -CliDirectory artifacts/publish/cli -OutputDirectory artifacts/packages -NsisPath $nsis
 
-      - name: Test per-user installer and optional CLI
+      - name: Test per-user installer and shared application directory
         run: |
           $installer = Get-Item artifacts/packages/Pixelery-Setup-*-x64.exe
           ./tools/Test-Installer.ps1 -InstallerPath $installer.FullName -AppDirectory artifacts/publish/app -CliDirectory artifacts/publish/cli -OutputDirectory "$env:RUNNER_TEMP/Pixelery/Tests/Installer"
@@ -100,6 +103,7 @@ jobs:
           path: |
             artifacts/test-results/*.trx
             ${{ runner.temp }}/Pixelery/Tests/Installer/*/results.txt
+            ${{ runner.temp }}/Pixelery/Tests/PalettePreviews/*/results.txt
           if-no-files-found: warn
           retention-days: 7
 

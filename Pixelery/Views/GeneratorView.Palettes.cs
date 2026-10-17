@@ -67,8 +67,7 @@ public sealed partial class GeneratorView
     {
         OnSettingsChanged();
         UpdateNamePreview();
-        if (Settings.UsePaletteSet)
-            SchedulePreviewRefresh();
+        SchedulePreviewRefresh();
     }
 
     private void UpdatePaletteSamples()

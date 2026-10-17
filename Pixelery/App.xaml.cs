@@ -40,6 +40,7 @@ namespace Pixelery
             DaisyResourceLookup.EnsureTokens();
 
             AppSettings.Initialize(GetStateDirectory());
+            Pixelery.Updates.UpdateDownload.CleanupAbandoned(AppSettings.StateDirectory);
 
             // Ensure the localization registers its resolver early.
             _ = AppLocalization.Instance;

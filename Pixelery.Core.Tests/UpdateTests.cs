@@ -39,7 +39,8 @@ public sealed class UpdateTests
         {
             var release = Assert.IsType<UpdateRelease>(await client.CheckAsync(new Version(0, 2, 0, 0), default));
             var root = TestData.NewDirectory();
-            var path = await client.DownloadAsync(release, root, null, default);
+            using var download = await client.DownloadAsync(release, root, null, default);
+            var path = download.Path;
             Assert.StartsWith(Path.Combine(Path.GetFullPath(root), "Updates") + Path.DirectorySeparatorChar, path, StringComparison.OrdinalIgnoreCase);
             Assert.Equal(Installer, await File.ReadAllBytesAsync(path));
             client.VerifyFile(path, release);
@@ -93,9 +94,119 @@ public sealed class UpdateTests
         using (http)
         {
             var release = (await client.CheckAsync(new Version(0, 2, 0), default))!;
-            await Assert.ThrowsAsync<InvalidDataException>(() => client.DownloadAsync(release, TestData.NewDirectory(), null, default));
+            var root = TestData.NewDirectory();
+            await Assert.ThrowsAsync<InvalidDataException>(() => client.DownloadAsync(release, root, null, default));
+            Assert.Empty(Directory.EnumerateFileSystemEntries(Path.Combine(root, "Updates")));
         }
     }
+
+    [Fact]
+    public async Task CancellationAfterWritingRemovesTheClosedPartialFile()
+    {
+        var (client, http) = Client(Feed());
+        using (http)
+        using (var cancellation = new CancellationTokenSource())
+        {
+            var release = (await client.CheckAsync(new Version(0, 2, 0), default))!;
+            var root = TestData.NewDirectory();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.DownloadAsync(release, root,
+                new CancelProgress(cancellation), cancellation.Token));
+            Assert.Empty(Directory.EnumerateFileSystemEntries(Path.Combine(root, "Updates")));
+        }
+    }
+
+    [Fact]
+    public async Task CleanupKeepsActiveDownloadsAndDisposeRemovesSupersededDownload()
+    {
+        var (client, http) = Client(Feed());
+        using (http)
+        {
+            var release = (await client.CheckAsync(new Version(0, 2, 0), default))!;
+            var root = TestData.NewDirectory();
+            var first = await client.DownloadAsync(release, root, null, default);
+            using var second = await client.DownloadAsync(release, root, null, default);
+            UpdateDownload.CleanupAbandoned(root);
+            Assert.True(File.Exists(first.Path));
+            Assert.True(File.Exists(second.Path));
+            first.Dispose();
+            first.Dispose();
+            Assert.False(Directory.Exists(Path.GetDirectoryName(first.Path)));
+            Assert.True(File.Exists(second.Path));
+        }
+    }
+
+    [Fact]
+    public async Task CleanupPreservesRunningInstallerThenRemovesAbandonedPayload()
+    {
+        var (client, http) = Client(Feed());
+        using (http)
+        {
+            var release = (await client.CheckAsync(new Version(0, 2, 0), default))!;
+            var root = TestData.NewDirectory();
+            using var download = await client.DownloadAsync(release, root, null, default);
+            download.HandOffToInstaller();
+            using (var running = new FileStream(download.Path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                UpdateDownload.CleanupAbandoned(root);
+                Assert.True(File.Exists(download.Path));
+            }
+            UpdateDownload.CleanupAbandoned(root);
+            Assert.False(Directory.Exists(Path.GetDirectoryName(download.Path)));
+        }
+    }
+
+    [Fact]
+    public void CleanupCannotClaimDirectoryBeforeCreatorOpensLease()
+    {
+        var root = TestData.NewDirectory();
+        var directory = Path.Combine(root, "Updates", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+
+        // Reproduce the exact creation gap, without scheduling-dependent stress loops.
+        UpdateDownload.CleanupAbandoned(root);
+        Assert.True(Directory.Exists(directory));
+        var leasePath = Path.Combine(directory, "download.lock");
+        Assert.False(File.Exists(leasePath));
+        using (var lease = new FileStream(leasePath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
+        {
+            File.WriteAllBytes(Path.Combine(directory, "Pixelery-Setup.exe"), Installer);
+            UpdateDownload.CleanupAbandoned(root);
+            Assert.Equal(Installer, File.ReadAllBytes(Path.Combine(directory, "Pixelery-Setup.exe")));
+        }
+        UpdateDownload.CleanupAbandoned(root);
+        Assert.False(Directory.Exists(directory));
+    }
+
+    [Fact]
+    public void CleanupRemovesAbandonedDownloadsButPreservesUnknownFiles()
+    {
+        var root = TestData.NewDirectory();
+        var updates = Path.Combine(root, "Updates");
+        var abandoned = Path.Combine(updates, Guid.NewGuid().ToString("N"));
+        var foreign = Path.Combine(updates, Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(abandoned);
+        Directory.CreateDirectory(foreign);
+        File.WriteAllBytes(Path.Combine(abandoned, "Pixelery-Setup.exe"), Installer);
+        File.WriteAllText(Path.Combine(abandoned, "download.lock"), "");
+        File.WriteAllText(Path.Combine(foreign, "user-file.txt"), "preserve");
+        UpdateDownload.CleanupAbandoned(root);
+        Assert.False(Directory.Exists(abandoned));
+        Assert.Equal("preserve", File.ReadAllText(Path.Combine(foreign, "user-file.txt")));
+    }
+
+    private sealed class CancelProgress(CancellationTokenSource cancellation) : IProgress<double>
+    {
+        public void Report(double value) => cancellation.Cancel();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("relative")]
+    [InlineData("../escape")]
+    [InlineData("C:relative")]
+    [InlineData("invalid\0path")]
+    public void CacheRejectsInvalidOrRelativeStateDirectories(string directory) =>
+        Assert.Throws<ArgumentException>(() => UpdateDownload.CleanupAbandoned(directory));
 
     [Fact]
     public async Task CancelledCheckDoesNotReturnRelease()

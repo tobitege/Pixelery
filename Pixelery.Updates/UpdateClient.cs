@@ -63,37 +63,45 @@ public sealed class UpdateClient(HttpClient http, string publicKey)
         return latest;
     }
 
-    public async Task<string> DownloadAsync(UpdateRelease release, string stateDirectory, IProgress<double>? progress, CancellationToken cancellationToken)
+    public async Task<UpdateDownload> DownloadAsync(UpdateRelease release, string stateDirectory, IProgress<double>? progress, CancellationToken cancellationToken)
     {
-        // Never use a server-supplied file name or a path from the feed.
-        var directory = Path.Combine(Path.GetFullPath(stateDirectory), "Updates", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(directory);
-        var path = Path.Combine(directory, "Pixelery-Setup.exe");
-        using var response = await http.GetAsync(release.Download, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
-        if (response.Content.Headers.ContentLength is { } length && length != release.Length)
-            throw new InvalidDataException("Update size mismatch.");
-        await using (var source = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
-        await using (var destination = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, true))
+        UpdateDownload.CleanupAbandoned(stateDirectory);
+        var download = UpdateDownload.Create(stateDirectory);
+        try
         {
-            var buffer = new byte[81920];
-            long written = 0;
-            int read;
-            while ((read = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) != 0)
+            var path = download.Path;
+            using var response = await http.GetAsync(release.Download, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+            if (response.Content.Headers.ContentLength is { } length && length != release.Length)
+                throw new InvalidDataException("Update size mismatch.");
+            await using (var source = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
+            await using (var destination = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, true))
             {
-                written += read;
-                if (written > release.Length || written > MaximumInstallerSize)
-                    throw new InvalidDataException("Update exceeds expected size.");
-                await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
-                progress?.Report(100.0 * written / release.Length);
+                var buffer = new byte[81920];
+                long written = 0;
+                int read;
+                while ((read = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) != 0)
+                {
+                    written += read;
+                    if (written > release.Length || written > MaximumInstallerSize)
+                        throw new InvalidDataException("Update exceeds expected size.");
+                    await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+                    progress?.Report(100.0 * written / release.Length);
+                }
+                if (written != release.Length)
+                    throw new InvalidDataException("Incomplete update download.");
+                await destination.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
-            if (written != release.Length)
-                throw new InvalidDataException("Incomplete update download.");
-            await destination.FlushAsync(cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            await Task.Run(() => VerifyFile(path, release), cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            return download;
         }
-        cancellationToken.ThrowIfCancellationRequested();
-        await Task.Run(() => VerifyFile(path, release), cancellationToken).ConfigureAwait(false);
-        return path;
+        catch
+        {
+            download.Dispose();
+            throw;
+        }
     }
 
     public Process StartInstaller(string path, UpdateRelease release, int processId)

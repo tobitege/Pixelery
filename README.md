@@ -174,7 +174,7 @@ Release builds exclude the CDP package and server.
 Pull requests and pushes to `main` run Windows CI. It builds the solution, runs the Core tests, and publishes the app and CLI.
 The CLI smoke test checks all 37 styles, reproducible PNG output, image dimensions, parallel generation, text watermarks, and settings files.
 CI checks that both publish outputs contain native code without a managed runtime.
-It builds and tests the NSIS installer, including optional CLI installation, upgrades, and removal.
+It builds and tests the NSIS installer, including the shared app/CLI directory, upgrades, and removal.
 It uploads test results, the installer, and portable ZIP files, without creating a release or tag.
 
 Run the Core tests locally with `dotnet test Pixelery.Core.Tests/Pixelery.Core.Tests.csproj -c Release`.
@@ -201,7 +201,8 @@ The installer needs no administrator rights. Its default directory is `%LOCALAPP
 It offers all 12 application languages and initializes the selected language if no language preference exists.
 An existing language preference is kept.
 It creates a Start menu shortcut and an uninstall entry for the current user.
-The command line tool is an optional component in the `cli` subdirectory, named `Pixelery.Cli.exe`. Updates remember this selection.
+The installer always includes both `Pixelery.exe` and `Pixelery.Cli.exe` directly in the installation directory. Shared libraries are installed once.
+Upgrades move the previously installed app and CLI out of their separate component folders into this common directory.
 Updates and removal preserve application settings and files that the installer did not install.
 
 For a portable installation, use either ZIP.
@@ -216,7 +217,8 @@ $nsis = ./tools/Get-Nsis.ps1 -Directory "$env:LOCALAPPDATA/Pixelery/Tools"
 ```
 
 The helper downloads NSIS 3.13 and verifies the archive against a pinned SHA-256 checksum.
-The installer supports `/S` for silent installation and `/CLI=1` or `/CLI=0` to select the optional component.
+The installer supports `/S` for silent installation. Both applications are always installed.
+Only one Pixelery installation or removal can run at a time. A competing process exits with code 1618.
 For a custom directory, append `/D=<absolute path>` as the last argument, without quotes around the path.
 Its test script requires a clean user account without an existing installed Pixelery.
 
@@ -227,7 +229,8 @@ Settings are stored in `%LOCALAPPDATA%\Pixelery` (override with `PIXELERY_STATE_
 Open **Settings → Updates** to check for a stable release, download it, and select **Install and restart**.
 The app verifies Ed25519 signatures on both the update feed and installer with [NetSparkle](https://github.com/NetSparkleUpdater/NetSparkle).
 No update is downloaded or installed in the background. Closing settings cancels a pending check or download.
-Installation waits for Pixelery to close, preserves settings and the optional CLI selection, then restarts the app.
+Installation waits for Pixelery to close, updates both applications, preserves settings, and restarts the app.
+If installation fails, the automatic updater displays the error. After you dismiss it, a successful rollback restarts the previous app.
 Finish image generation before installing an update.
 For portable users, this creates or updates the per-user installation; the extracted portable files remain untouched.
 Downloads stay under the application data directory in `Updates`.

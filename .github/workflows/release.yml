@@ -107,7 +107,7 @@ jobs:
           $nsis = ./tools/Get-Nsis.ps1 -Directory "$env:RUNNER_TEMP/Pixelery/Tools"
           ./tools/New-Installer.ps1 -AppDirectory publish -CliDirectory publish-cli -OutputDirectory final -NsisPath $nsis -Version '${{ needs.validate.outputs.version }}'
 
-      - name: Test per-user installer and optional CLI
+      - name: Test per-user installer and shared application directory
         run: ./tools/Test-Installer.ps1 -InstallerPath 'final/Pixelery-Setup-${{ needs.validate.outputs.version }}-x64.exe' -AppDirectory publish -CliDirectory publish-cli -OutputDirectory "$env:RUNNER_TEMP/Pixelery/Tests/Installer" -ExpectedVersion '${{ needs.validate.outputs.version }}'
 
       - name: Sign update feed and installer
@@ -206,11 +206,11 @@ jobs:
 
           ## 🎨 Download
 
-          Native AOT applications (no .NET or Windows App SDK install required). Use the setup executable for a per-user installation with an optional CLI, or extract a portable ZIP. Keep all files from each ZIP together.
+          Native AOT applications (no .NET or Windows App SDK install required). The per-user installer includes the app and CLI in one directory. Alternatively, extract a portable ZIP and keep all its files together.
 
           | Asset | Description |
           |-------|-------------|
-          | `Pixelery-Setup-${{ needs.validate.outputs.version }}-x64.exe` | Per-user installer with optional command line tool |
+          | `Pixelery-Setup-${{ needs.validate.outputs.version }}-x64.exe` | Per-user installer including the app and command line tool |
           | `Pixelery-Windows-x64.zip` | App (Windows x64); run `Pixelery.exe` |
           | `Pixelery.Cli-Windows-x64.zip` | Command line tool; run `Pixelery.Cli.exe --help` |
           APP
