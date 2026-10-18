@@ -148,7 +148,7 @@
                                     <daisy:DaisyNumericUpDown x:Name="CountInput"
                                                               ShowThousandSeparators="True"
                                                               HorizontalAlignment="Stretch" />
-                                    <StackPanel x:Name="CountPresets" Orientation="Horizontal" Spacing="6" />
+                                    <local:WrapPanel x:Name="CountPresets" HorizontalSpacing="6" VerticalSpacing="6" />
                                 </StackPanel>
 
                                 <StackPanel Spacing="6">

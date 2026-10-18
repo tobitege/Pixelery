@@ -367,8 +367,9 @@ namespace Pixelery.Views
             var settings = AppSettings.Generator.Clone();
             settings.Styles = [style.Id];
             var seconds = Math.Clamp(decimal.Truncate(PreviewSlideshowSeconds.Value ?? 3), 1, 999);
-            var window = new SlideshowWindow(settings, Random.Shared.Next().ToString(CultureInfo.InvariantCulture),
-                TimeSpan.FromSeconds((double)seconds), fullScreen: true, AppSettings.SlideshowCrossfade,
+            var window = new SlideshowWindow(XamlRoot.ContentIslandEnvironment.AppWindowId,
+                settings, Random.Shared.Next().ToString(CultureInfo.InvariantCulture),
+                TimeSpan.FromSeconds((double)seconds), AppSettings.SlideshowCrossfade,
                 AppSettings.SlideshowShowInfo, startPaused: !_previewSlideshowRunning,
                 first: _previewSlide is { } slide && slide.Style == style ? slide : null);
             _previewFullScreen = window;
@@ -385,7 +386,7 @@ namespace Pixelery.Views
                     SchedulePreviewSlideshow();
                 }
             };
-            window.Activate();
+            window.Show(fullScreen: true);
         }
 
         private async Task RenderPreviewAsync()

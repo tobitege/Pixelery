@@ -16,13 +16,7 @@
                   Title="{Binding [App_Title]}"
                   IsBackButtonVisible="False">
             <TitleBar.IconSource>
-                <ImageIconSource>
-                    <ImageIconSource.ImageSource>
-                        <SvgImageSource UriSource="ms-appx:///Assets/app_icon.svg"
-                                        RasterizePixelWidth="32"
-                                        RasterizePixelHeight="32" />
-                    </ImageIconSource.ImageSource>
-                </ImageIconSource>
+                <ImageIconSource ImageSource="ms-appx:///Assets/app_icon.png" />
             </TitleBar.IconSource>
             <TitleBar.RightHeader>
                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,8,0" VerticalAlignment="Center">

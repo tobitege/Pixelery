@@ -155,6 +155,9 @@ namespace Pixelery.Services
 
         #region App options
 
+        /// <summary>Use the Windows accent instead of the standard blue in Fluent themes.</summary>
+        public static bool UseWindowsAccent { get; set; }
+
         /// <summary>Shows a thumbnail of the latest image while generating.</summary>
         public static bool LivePreview { get; set; } = true;
 
@@ -196,6 +199,9 @@ namespace Pixelery.Services
                 var value = line[(idx + 1)..].Trim();
                 switch (key)
                 {
+                    case nameof(UseWindowsAccent) when bool.TryParse(value, out var b):
+                        UseWindowsAccent = b;
+                        break;
                     case nameof(LivePreview) when bool.TryParse(value, out var b):
                         LivePreview = b;
                         break;
@@ -234,6 +240,7 @@ namespace Pixelery.Services
         {
             StateStorageProvider.Instance.SaveLines(OptionsKey,
             (string[])[
+                $"{nameof(UseWindowsAccent)}={UseWindowsAccent}",
                 $"{nameof(LivePreview)}={LivePreview}",
                 $"{nameof(PreviewIntervalMs)}={PreviewIntervalMs.ToString(CultureInfo.InvariantCulture)}",
                 $"{nameof(OpenFolderWhenDone)}={OpenFolderWhenDone}",

@@ -24,7 +24,7 @@ public static class SettingsOptions
 
     public static readonly HashSet<string> Flags = new(StringComparer.OrdinalIgnoreCase)
     {
-        "app-config", "grain", "vignette", "exif", "overwrite", "spread-dates", "dry-run", "quiet", "json", "help", "watermark"
+        "app-config", "grain", "vignette", "exif", "overwrite", "spread-dates", "multiple-sizes", "random-sizes", "dry-run", "quiet", "json", "help", "watermark"
     };
 
     /// <summary>The app's generator.json (respects PIXELERY_STATE_ROOT like the app).</summary>
@@ -66,14 +66,27 @@ public static class SettingsOptions
         if (args.Switch("vignette") is { } vignette)
             settings.Vignette = vignette;
 
+        // Select the remembered mode first, then apply any explicit size choices to that mode.
+        var multipleSizes = args.Switch("multiple-sizes");
+        if (multipleSizes is { } enabledSizes)
+            settings.SetMultipleSizes(enabledSizes);
+
         // Size options replace the size configuration: --sizes alone drops the ratio × edge combinations,
         // --ratios or --edges alone drop the fixed sizes.
         var hasCombination = args.Has("ratios") || args.Has("edges");
         var hasFixed = args.Has("sizes");
+        var previousSizes = settings.CaptureSizeSelection();
         if (hasFixed && !hasCombination)
+        {
             settings.AspectRatios = [];
+            settings.LongEdges = [];
+        }
         if (hasCombination && !hasFixed)
+        {
             settings.FixedSizes = [];
+            if (settings.AspectRatios.Count == 0) settings.AspectRatios = ["16:9"];
+            if (settings.LongEdges.Count == 0) settings.LongEdges = [1920];
+        }
 
         if (args.List("orientation") is { } orientation)
         {
@@ -125,28 +138,61 @@ public static class SettingsOptions
             }
         }
 
+        if (multipleSizes == false && !settings.CaptureSizeSelection().IsValid(multiple: false))
+            throw new UsageException("--no-multiple-sizes requires exactly one size and one orientation.");
+        if (multipleSizes == null && (hasCombination || hasFixed || args.Has("orientation")))
+        {
+            var multiple = !settings.CaptureSizeSelection().IsValid(multiple: false);
+            if (multiple != settings.MultipleSizes)
+                settings.InactiveSizeSelection = previousSizes;
+            settings.MultipleSizes = multiple;
+            if (!multiple) settings.RandomSizes = false;
+        }
+        if (args.Switch("random-sizes") is { } randomSizes)
+        {
+            if (randomSizes && !settings.MultipleSizes)
+                throw new UsageException("--random-sizes requires multiple-size mode (--multiple-sizes or multiple size choices).");
+            settings.RandomSizes = randomSizes;
+        }
+
         if (args.List("formats") is { } formats)
             settings.Formats = ParseEnums<OutputFormat>(formats.Select(f => f.Equals("jpg", StringComparison.OrdinalIgnoreCase) ? "jpeg" : f), "formats");
         if (args.Int("quality", 1, 100) is { } quality)
             settings.Quality = quality;
         if (args.Value("name") is { } name)
-            settings.NamePattern = name;
+        {
+            if (!settings.TryAddNamePattern(name))
+                throw new UsageException("--name is not a valid filename pattern or the saved pattern list is full.");
+        }
         if (args.Int("start", 0, int.MaxValue) is { } start)
             settings.StartIndex = start;
         if (args.Switch("overwrite") is { } overwrite)
             settings.Overwrite = overwrite;
         if (args.Switch("exif") is { } exif)
             settings.WriteExif = exif;
-        if (args.Switch("spread-dates") is { } spread)
-            settings.SpreadDates = spread;
-        if (args.Int("spread-years", 1, 100) is { } years)
+        if (args.Value("spread-from") is { } from)
         {
-            settings.SpreadYears = years;
+            settings.SpreadFrom = ParseMonth(from, "spread-from");
             settings.SpreadDates = true;
         }
+        if (args.Value("spread-to") is { } to)
+        {
+            settings.SpreadTo = ParseMonth(to, "spread-to");
+            settings.SpreadDates = true;
+        }
+        if (args.Switch("spread-dates") is { } spread)
+            settings.SpreadDates = spread;
 
         ApplyWatermark(args, settings.Watermark);
         return settings;
+    }
+
+    private static DateOnly ParseMonth(string text, string option)
+    {
+        if (!DateOnly.TryParseExact(text + "-01", "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var month) || month.Year < 1601)
+            throw new UsageException($"--{option} needs a month in yyyy-MM format (year 1601–9999).");
+        return month;
     }
 
     /// <summary>

@@ -20,6 +20,7 @@ public static class GenerateCommand
         ["Validation_Formats"] = "Select at least one format (--formats).",
         ["Validation_Name"] = "The file name schema (--name) is invalid.",
         ["Validation_Count"] = "Generate at least one image (--count).",
+        ["Validation_DateRange"] = "Choose a valid timestamp range: --spread-from must not be after --spread-to.",
         ["Validation_WatermarkImage"] = "A watermark image layer has no readable image file (--watermark-image)."
     };
 
@@ -121,14 +122,15 @@ public static class GenerateCommand
     {
         var sizes = s.BuildSizePool();
         var styles = s.Styles.Select(StyleCatalog.Find).OfType<ArtStyle>().ToList();
+        var sizeMode = s.MultipleSizes ? (s.RandomSizes ? "multiple, random" : "multiple, ordered") : "single";
         string Join<T>(IEnumerable<T> items) => string.Join(", ", items.Select(i => i!.ToString()!.ToLowerInvariant()));
 
         Console.WriteLine($"Output     {s.OutputFolder}");
         Console.WriteLine($"Images     {s.Count:N0} with {s.Threads} thread{(s.Threads == 1 ? string.Empty : "s")}, seed {(string.IsNullOrWhiteSpace(s.Seed) ? "random" : s.Seed)}");
         Console.WriteLine($"Styles     {styles.Count} of {StyleCatalog.All.Count}: {(styles.Count == StyleCatalog.All.Count ? "all" : string.Join(", ", styles.Select(x => x.Id)))}");
         Console.WriteLine($"Colors     palettes {Join(s.Palettes)}; tones {Join(s.Tones)}; detail {Join(s.Details)}{(s.Grain ? "; grain" : string.Empty)}{(s.Vignette ? "; vignette" : string.Empty)}");
-        Console.WriteLine($"Sizes      {sizes.Count} sizes, {sizes.Min(x => x.Megapixels):0.##}–{sizes.Max(x => x.Megapixels):0.##} MP: {string.Join(", ", sizes.Take(6).Select(x => $"{x.Width}x{x.Height}"))}{(sizes.Count > 6 ? ", …" : string.Empty)}");
-        Console.WriteLine($"Files      {Join(s.Formats)}, quality {s.Quality}{(s.SpreadDates ? $", dates spread over {s.SpreadYears} years" : string.Empty)}{(s.WriteExif ? ", EXIF" : string.Empty)}{(s.Overwrite ? ", overwrite" : string.Empty)}");
+        Console.WriteLine($"Sizes      {sizeMode}; {sizes.Count} sizes, {sizes.Min(x => x.Megapixels):0.##}–{sizes.Max(x => x.Megapixels):0.##} MP: {string.Join(", ", sizes.Take(6).Select(x => $"{x.Width}x{x.Height}"))}{(sizes.Count > 6 ? ", …" : string.Empty)}");
+        Console.WriteLine($"Files      {Join(s.Formats)}, quality {s.Quality}{(s.SpreadDates ? $", timestamps {s.SpreadFrom:yyyy-MM} through {s.SpreadTo:yyyy-MM}" : string.Empty)}{(s.WriteExif ? ", EXIF" : string.Empty)}{(s.Overwrite ? ", overwrite" : string.Empty)}");
         Console.WriteLine($"Names      {s.NamePattern}  (start {s.StartIndex})");
         if (s.Watermark.IsActive)
         {

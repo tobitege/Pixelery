@@ -150,8 +150,12 @@ public sealed class PaletteSetTests
     [InlineData("{\"UsePaletteSet\":true}")]
     [InlineData("{\"PaletteSet\":null}")]
     [InlineData("{\"PaletteSet\":{\"Entries\":null}}")]
-    public void SettingsRejectInvalidPaletteSets(string json) =>
-        Assert.Throws<JsonException>(() => SettingsJson.Deserialize(json));
+    public void SettingsRejectInvalidPaletteSets(string json)
+    {
+        var node = JsonNode.Parse(json)!.AsObject();
+        node[nameof(GeneratorSettings.FormatVersion)] = GeneratorSettings.CurrentFormatVersion;
+        Assert.Throws<JsonException>(() => SettingsJson.Deserialize(node.ToJsonString()));
+    }
 
     [Fact]
     public void RecipeUsesTheSavedPaletteWhenOptedIn()

@@ -1,4 +1,21 @@
-# Pixelery
+<p align="center">
+  <img src="Pixelery/Assets/app_icon.png" width="80" height="80" alt="Pixelery logo">
+</p>
+
+<h1 align="center">Pixelery</h1>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Windows-10%20%2F%2011%20%C2%B7%20x64-0078D4" alt="Platform: Windows 10 / 11, x64">
+  <a href="https://github.com/tobitege/Pixelery/actions/workflows/ci.yml"><img src="https://github.com/tobitege/Pixelery/actions/workflows/ci.yml/badge.svg?branch=main" alt="Windows CI"></a>
+  <a href="https://www.nuget.org/packages/Flowery.WinUI/1.4.0"><img src="https://img.shields.io/badge/NuGet-Flowery.WinUI%201.4.0-004880?logo=nuget&amp;logoColor=white" alt="NuGet: Flowery.WinUI 1.4.0"></a>
+</p>
+
+<p align="center">
+  <span lang="en">Available in 12 languages</span> · <span lang="de">In 12 Sprachen verfügbar</span> · <span lang="fr">Disponible en 12 langues</span><br>
+  <span lang="es">Disponible en 12 idiomas</span> · <span lang="it">Disponibile in 12 lingue</span> · <span lang="tr">12 dilde kullanılabilir</span><br>
+  <span lang="ja">12言語に対応</span> · <span lang="ko">12개 언어 지원</span> · <span lang="zh-CN">支持 12 种语言</span><br>
+  <span lang="uk">Доступно 12 мовами</span> · <span lang="ar" dir="rtl">متوفر بـ 12 لغة</span> · <span lang="he" dir="rtl">זמין ב־12 שפות</span>
+</p>
 
 ![Pixelery: styles with live previews, generation settings and the run panel](banner.png)
 
@@ -19,10 +36,10 @@ Built with [Flowery.WinUI](https://github.com/tobitege/Flowery.WinUI) (NuGet) an
 
 - 37 styles in six categories, each with its own random variants
 - Seven palette families and three background tones
-- Multiple choice everywhere: with several options selected, each image picks one at random
-- Sizes from aspect ratios × orientations × long edges, plus fixed presets and your own values
-- File name schema with placeholders; `\` or `/` creates subfolders
-- JPEG, PNG and WebP; optional spread file dates and EXIF date taken / camera model so photo apps can group by date
+- Random choices for styles, colors and formats; sizes can stay fixed, cycle in order or vary randomly
+- Sizes from aspect ratios × orientations × long edges, or fixed presets and your own values
+- Saved file name patterns with placeholders; `\` or `/` creates subfolders
+- JPEG, PNG and WebP; optional file timestamp distribution and EXIF capture dates / camera model so photo apps can group by date
 - Watermarks with any number of text and image layers
 - Reproducible: the master seed plus the image index define every image; a settings file recreates a gallery on another PC
 - Cancellable progress with speed, remaining time and a live thumbnail of the latest image
@@ -53,14 +70,21 @@ Cards and the preview list use bundled thumbnails at startup. You can regenerate
 
 ## Dimensions
 
-All selected combinations form a pool; each image picks one size at random.
+By default, select exactly one size: either a fixed preset or one aspect ratio combined with a horizontal resolution.
+**Multiple selection** adds more choices and cycles through their combinations in order.
+Enable **Random** to choose a size randomly for each image. This option requires multiple selection.
+Each selection mode remembers its own choices when you switch modes or restart the app.
 
-- **Orientation:** landscape, portrait (for all non-square ratios)
+- **Orientation:** landscape by default, or portrait; applies to fixed presets as well as aspect ratios. Square images stay square.
 - **Aspect ratios:** 1:1, 5:4, 4:3, 3:2, 16:10, 16:9, 2:1, 21:9, 32:9 and your own (e.g. 7:5 or 1.85)
-- **Long edge:** 640 to 7,680 px and your own
+- **Horizontal resolution:** 640 to 7,680 px and your own. This is the width in landscape mode and the height in portrait mode.
 - **Fixed dimensions:** presets from Thumbnail to 24 MP, phone, portrait 4:5, square, A4 at 300 dpi, and your own (width × height)
 
 ## Output and file names
+
+Select a saved file name pattern, or enter a new pattern and click **Add**.
+You can remove saved patterns while keeping at least one. Duplicate entries are ignored after trimming surrounding spaces.
+The app stores up to 100 patterns in your local settings.
 
 | Placeholder | Value |
 | --- | --- |
@@ -68,18 +92,33 @@ All selected combinations form a pool; each image picks one size at random.
 | `{style}`, `{category}`, `{palette}` | Style id, style category, palette name (`:upper`, `:lower`, `:title` change the case) |
 | `{w}`, `{h}`, `{ratio}`, `{orient}` | Width, height, aspect ratio (e.g. `16x9`, `7x5`), landscape/portrait/square |
 | `{seed}` | Image seed (hex, `:d` for decimal) to reproduce the image |
-| `{date:yyyy-MM-dd}` | Image date (spread over the past years if enabled), .NET date format |
+| `{date:yyyy-MM-dd}` | Image date (random within the selected month range if enabled), .NET date format |
 | `{now:yyyyMMdd_HHmmss}` | Time of the run, or the end of the reference date |
 | `{rand:6}`, `{guid}` | Random letters and digits, unique id |
 | `{fmt}`, `{total}` | File format, number of images in the run |
 
 Example: `{date:yyyy}\{date:MM}\{style}_{n:00000}` creates year and month folders. The extension is added automatically; existing files are overwritten or get a numeric suffix.
 
-Further options: formats (JPEG, PNG, WebP; several pick at random), quality, spread file dates over N years, EXIF date taken and camera model (JPEG), overwrite existing files, and a reference date. The reference date replaces the day of the run for spread file dates, EXIF dates, `{date}` and `{now}`.
+Further options include formats (JPEG, PNG, WebP), quality, EXIF capture dates and camera model (JPEG), file replacement, and a reference date.
+If you select several formats, each image uses a random format.
+The reference date replaces the day of the run for `{now}`.
+When timestamp distribution is off, it also sets the image date, EXIF dates and `{date}`.
+
+**Spread file timestamps** is off by default. Files keep their actual generation timestamps.
+Enable it to create test images with random file timestamps and capture dates between **From** and **To**, each with month and year.
+Both months are included in full, including leap days. The period is independent of the reference date and can include future months.
+If you move one endpoint past the other, the other endpoint moves to the same month.
 
 ## Sharing settings
 
-**Export** in the Generate panel writes every setting except the target folder and the thread count to a JSON file. **Import** loads such a file and keeps the target folder and threads of this PC. With the same file and the same Pixelery version, another PC creates the same images with the same names and dates.
+**Export** in the Generate panel writes generation settings to a JSON file, including both remembered size selections.
+The file excludes the target folder, thread count and local pattern collection. It includes only the selected file name pattern.
+**Import** keeps this PC's folder, threads and pattern collection. It validates the imported pattern and adds it if it is new.
+With the same file and Pixelery version, another PC creates the same images, names and image dates.
+Filesystem timestamps remain the actual generation times unless **Spread file timestamps** is enabled.
+
+Settings files require `FormatVersion: 1`. Unversioned files and other format versions are rejected; there is no migration.
+If the app's local generator settings use the old format, the app starts with the new defaults.
 
 - Export fixes an empty seed and an empty reference date: it picks a random seed and today's date, and sets both in the app as well.
 - Import takes the styles exactly as written. A newer Pixelery does not add its new styles, as it does for its own saved settings.
@@ -156,12 +195,25 @@ Pixelery.Cli.exe <command> --help
 | --- | --- |
 | Settings source | `-c/--config <file>` (styles exactly as written), `--app-config`, `--save-config <file>` |
 | Styles and colors | `-s/--styles`, `--exclude`, `--palettes`, `--tones`, `--detail`, `--grain`, `--vignette` (lists are comma separated, `all` selects everything) |
-| Sizes | `--orientation`, `--ratios`, `--edges`, `--sizes` (given size options replace the sizes of a loaded configuration) |
-| Output | `-o/--out`, `-n/--count`, `-j/--threads` (`max` for all cores), `--seed`, `--formats`, `--quality`, `--name`, `--start`, `--overwrite`, `--spread-dates`, `--spread-years`, `--exif` |
+| Sizes | `--multiple-sizes`, `--orientation`, `--ratios`, `--edges`, `--sizes`, `--random-sizes` (size options replace loaded sizes; multiple choices cycle in order by default) |
+| Output | `-o/--out`, `-n/--count`, `-j/--threads` (`max` for all cores), `--seed`, `--formats`, `--quality`, `--name`, `--start`, `--overwrite`, `--spread-dates`, `--spread-from` / `--spread-to` (`yyyy-MM`, inclusive), `--exif` |
 | Watermark | `--watermark`/`--no-watermark`, `--watermark-text`, `--watermark-image`, `--watermark-position`, `--watermark-size`, `--watermark-opacity`, `--watermark-rotation`, `--watermark-color`, `--watermark-font` (everything else, such as several layers, outline, plate or blend modes, via `--config`) |
 | Run | `--dry-run`, `-q/--quiet`, `--json` |
 
 Switches can be negated with `--no-…`. Exit codes: 0 done, 1 failures, 2 invalid options, 130 cancelled.
+
+Use `--multiple-sizes` or `--no-multiple-sizes` to restore the remembered selection for that mode, just as in the app.
+Then `--sizes`, `--ratios`, `--edges` and `--orientation` replace the choices in that mode.
+Without a mode switch, explicit size choices determine whether the CLI uses single or multiple selection.
+`--no-multiple-sizes` requires exactly one size and one orientation. Conflicting choices are rejected.
+`--random-sizes` requires multiple selection; `--no-random-sizes` cycles through the choices in order.
+`--save-config` saves both remembered selections and the active mode.
+
+```powershell
+.\Pixelery.Cli.exe generate --multiple-sizes --sizes 640x480,1920x1080 --no-random-sizes --count 10
+.\Pixelery.Cli.exe generate --config gallery.json --multiple-sizes --random-sizes
+.\Pixelery.Cli.exe generate --config gallery.json --no-multiple-sizes --save-config single.json --dry-run
+```
 
 `render`, `setbackground` and `setscreensaver` produce exactly one image and accept the style, color, size and watermark options. Without size options they render at the primary screen resolution. Backgrounds are kept in `%LOCALAPPDATA%\Pixelery\Wallpaper`; each screen saver image gets its own folder under `%LOCALAPPDATA%\Pixelery\Screensaver`.
 

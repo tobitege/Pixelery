@@ -19,6 +19,9 @@ namespace Pixelery.Views
         public SettingsView()
         {
             InitializeComponent();
+            FollowPopupTheme(ThemeDropdown);
+            FollowPopupTheme(SizeDropdown);
+            FollowPopupTheme(LanguageSelect);
             LanguageSelect.SelectionChanged += LanguageSelect_SelectionChanged;
             AppLocalization.Instance.PropertyChanged += (_, _) => DispatcherQueue.TryEnqueue(Refresh);
             FlowerySizeManager.SizeChanged += (_, _) => DispatcherQueue.TryEnqueue(() =>
@@ -26,7 +29,13 @@ namespace Pixelery.Views
                 ApplyScale();
                 Refresh();
             });
-            Loaded += (_, _) => ApplyScale();
+            Loaded += (_, _) =>
+            {
+                DaisyThemeManager.ThemeChanged += ThemeChanged;
+                ApplyScale();
+                UpdateAccentOption();
+            };
+            Unloaded += (_, _) => DaisyThemeManager.ThemeChanged -= ThemeChanged;
             VersionText.Text = $"Version {Core.AppInfo.Version(typeof(SettingsView).Assembly)} · {Core.AppInfo.Copyright} · {Core.AppInfo.License}";
         }
 
@@ -97,10 +106,27 @@ namespace Pixelery.Views
 
         public void Refresh()
         {
+            UpdateAccentOption();
             RefreshUpdateControls();
             BuildLanguageSelect();
             BuildGenerationOptions();
             BuildShortcuts();
+        }
+
+        private void ThemeChanged(object? sender, string name) => UpdateAccentOption();
+
+        private void UpdateAccentOption()
+        {
+            WindowsAccentCheck.IsChecked = AppSettings.UseWindowsAccent;
+            WindowsAccentCheck.Visibility = FluentThemes.IsFluent(DaisyThemeManager.CurrentThemeName)
+                ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void WindowsAccentCheck_Click(object sender, RoutedEventArgs e)
+        {
+            AppSettings.UseWindowsAccent = WindowsAccentCheck.IsChecked == true;
+            FluentThemes.ApplyAccentPreference(DaisyThemeManager.CurrentThemeName);
+            AppSettings.SaveOptions();
         }
 
         private void BuildLanguageSelect()

@@ -16,6 +16,13 @@
                         <TextBlock Text="{Binding [Settings_Theme]}" Style="{StaticResource AppLabelStyle}" daisy:FlowerySizeManager.ResponsiveFont="Primary" />
                         <daisy:DaisyThemeDropdown x:Name="ThemeDropdown" Grid.Column="1" Width="240" />
                     </Grid>
+                    <daisy:DaisyCheckBox x:Name="WindowsAccentCheck"
+                                         AutomationProperties.AutomationId="UseWindowsAccent"
+                                         AutomationProperties.Name="{Binding [Settings_UseWindowsAccent]}"
+                                         Variant="Primary"
+                                         Click="WindowsAccentCheck_Click">
+                        <TextBlock Text="{Binding [Settings_UseWindowsAccent]}" TextWrapping="Wrap" />
+                    </daisy:DaisyCheckBox>
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="{Binding [Settings_Size]}" Style="{StaticResource AppLabelStyle}" daisy:FlowerySizeManager.ResponsiveFont="Primary" />
@@ -52,7 +59,7 @@
                     <TextBlock Text="{Binding [Update_Title]}" Style="{StaticResource AppSectionHeaderStyle}" daisy:FlowerySizeManager.ResponsiveFont="SectionHeader" />
                     <TextBlock Text="{Binding [Update_Hint]}" TextWrapping="Wrap" Style="{StaticResource AppLabelStyle}" daisy:FlowerySizeManager.ResponsiveFont="Secondary" />
                     <TextBlock x:Name="UpdateStatus" TextWrapping="Wrap" Style="{StaticResource AppLabelStyle}" AutomationProperties.LiveSetting="Polite" daisy:FlowerySizeManager.ResponsiveFont="Primary" />
-                    <ProgressBar x:Name="UpdateProgress" Visibility="Collapsed" Minimum="0" Maximum="100" />
+                    <ProgressBar x:Name="UpdateProgress" Visibility="Collapsed" Minimum="0" Maximum="100" Foreground="{ThemeResource DaisyPrimaryBrush}" />
                     <local:WrapPanel xmlns:local="using:Pixelery.Views" HorizontalSpacing="8" VerticalSpacing="8">
                         <daisy:DaisyButton x:Name="UpdateCheckButton" AutomationProperties.AutomationId="UpdateCheck" Content="{Binding [Update_Check]}" Variant="Primary" Click="UpdateCheck_Click" />
                         <daisy:DaisyButton x:Name="UpdateInstallButton" AutomationProperties.AutomationId="UpdateInstall" Visibility="Collapsed" Variant="Primary" Click="UpdateInstall_Click" />
@@ -64,11 +71,8 @@
             <!-- About -->
             <Border Style="{StaticResource AppSectionStyle}">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
-                    <Image x:Name="AboutIcon" Width="56" Height="56" VerticalAlignment="Top">
-                        <Image.Source>
-                            <SvgImageSource UriSource="ms-appx:///Assets/app_icon.svg" RasterizePixelWidth="112" RasterizePixelHeight="112" />
-                        </Image.Source>
-                    </Image>
+                    <Image x:Name="AboutIcon" Width="56" Height="56" VerticalAlignment="Top"
+                           Source="ms-appx:///Assets/app_icon.png" />
                     <StackPanel Grid.Column="1" Spacing="4">
                         <TextBlock Text="{Binding [App_Title]}" Style="{StaticResource AppSectionHeaderStyle}" daisy:FlowerySizeManager.ResponsiveFont="SectionHeader" />
                         <TextBlock x:Name="VersionText" Style="{StaticResource AppLabelStyle}" Opacity="0.7" daisy:FlowerySizeManager.ResponsiveFont="Primary" />
