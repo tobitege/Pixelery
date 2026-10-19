@@ -1,0 +1,35 @@
+name: NuGet audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '30 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit direct and transitive packages (${{ matrix.configuration }})
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # NuGet audit warnings and failed vulnerability lookups are errors in Directory.Build.props.
+      - name: Restore and audit all projects
+        run: dotnet restore Pixelery.slnx -p:Configuration=${{ matrix.configuration }} --force-evaluate

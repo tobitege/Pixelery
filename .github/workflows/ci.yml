@@ -33,7 +33,7 @@ jobs:
 
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
-          dotnet-version: '10.0.402'
+          global-json-file: global.json
 
       - name: Build Debug app with CDP
         run: dotnet build Pixelery/Pixelery.csproj -c Debug -p:Platform=x64 -nologo
@@ -97,7 +97,7 @@ jobs:
 
       - name: Upload test results
         if: ${{ always() }}
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-results
           path: |
@@ -108,7 +108,7 @@ jobs:
           retention-days: 7
 
       - name: Upload Windows packages
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: Pixelery-Windows-x64-CI
           path: |
@@ -116,3 +116,40 @@ jobs:
             artifacts/packages/Pixelery-Setup-*-x64.exe
           if-no-files-found: error
           retention-days: 7
+
+  dependency-submission:
+    name: Submit NuGet dependencies (${{ matrix.configuration }})
+    # Manual runs also inspect the default branch. Pull requests never get a write token.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        id: checkout
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore complete dependency graph
+        run: dotnet restore Pixelery.slnx -p:Configuration=${{ matrix.configuration }}
+
+      - name: Submit resolved direct and transitive packages
+        uses: advanced-security/component-detection-dependency-submission-action@a02aeda7a175ad4dd38a13c4d3ff2df9da8f2cf0 # v0.2.0
+        with:
+          detectorsCategories: NuGet
+          fail-on-empty: 'true'
+          correlator: nuget-${{ matrix.configuration }}
+          snapshot-sha: ${{ steps.checkout.outputs.commit }}
+          snapshot-ref: refs/heads/${{ github.event.repository.default_branch }}
