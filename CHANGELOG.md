@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-10-19
+
+### Added
+
+- Audit direct and transitive NuGet packages on every restore and in a weekly workflow, and submit the resolved packages to the GitHub dependency graph.
+- Added a downloads badge to the README.
+
+### Changed
+
+- Update Flowery.WinUI to 1.6.0.
+- Update Microsoft.Windows.SDK.BuildTools to 10.0.28000.2705, as required by Flowery.WinUI 1.6.0.
+- Refresh the README screenshot and badges. Explain how colors and finish apply, and shorten the release build and update notes for end users.
+- Move the command line reference into `CLI.md`, including its use of settings files, file name patterns and watermarks. The README describes these features in the app.
+
 ## [0.3.0] - 2026-10-17
 
 ### Added
