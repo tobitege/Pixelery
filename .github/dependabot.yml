@@ -1,12 +1,21 @@
 version: 2
 updates:
   - package-ecosystem: nuget
+    # The root solution includes every project and the central package versions.
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
     open-pull-requests-limit: 5
     groups:
       skia:
+        patterns:
+          - "SkiaSharp*"
+          - "HarfBuzzSharp*"
+      skia-security:
+        applies-to: security-updates
         patterns:
           - "SkiaSharp*"
           - "HarfBuzzSharp*"
@@ -15,4 +24,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: "06:30"
+      timezone: Europe/Berlin
     open-pull-requests-limit: 5
