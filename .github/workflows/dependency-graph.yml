@@ -1,0 +1,49 @@
+name: Dependency graph
+
+# Only the default branch is submitted. Pull requests never get a write token.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-submission:
+    name: Submit NuGet dependencies
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+    steps:
+      # Manual runs also inspect the default branch.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        id: checkout
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore complete dependency graph
+        run: dotnet restore Pixelery.slnx -p:Configuration=${{ matrix.configuration }}
+
+      - name: Submit resolved direct and transitive packages
+        uses: advanced-security/component-detection-dependency-submission-action@a02aeda7a175ad4dd38a13c4d3ff2df9da8f2cf0 # v0.2.0
+        with:
+          detectorsCategories: NuGet
+          fail-on-empty: 'true'
+          correlator: nuget-${{ matrix.configuration }}
+          snapshot-sha: ${{ steps.checkout.outputs.commit }}
+          snapshot-ref: refs/heads/${{ github.event.repository.default_branch }}
