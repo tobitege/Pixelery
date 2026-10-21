@@ -86,6 +86,7 @@ namespace Pixelery.Views
             UpdateSummary();
             UpdateNamePreview();
             ApplyScale();
+            _shell?.OnSectionsBuilt();
         }
 
         /// <summary>Registers a text update that runs now and again after every language change.</summary>

@@ -358,5 +358,23 @@
   "Shortcut_Start": "Start (Erzeugen oder Diashow, je nach Tab)",
   "Shortcut_Cancel": "Laufende Erzeugung abbrechen",
   "Shortcut_Settings": "Einstellungen öffnen",
-  "Shortcut_ToggleStyle": "Fokussierte Stilkarte aus- oder abwählen"
+  "Shortcut_ToggleStyle": "Fokussierte Stilkarte aus- oder abwählen",
+
+  "Settings_ShowTour": "Tour erneut zeigen",
+  "Tour_StylesTitle": "Stile",
+  "Tour_StylesText": "Hier wählst du die Kunststile. Jedes Bild nutzt zufällig einen der gewählten Stile. Ein Klick auf eine Vorschau zeigt den Stil groß.",
+  "Tour_ColorsTitle": "Farben & Effekte",
+  "Tour_ColorsText": "Wähle Palettenfamilien und Hintergrundtöne oder ein festes Palettenset. Detailgrad und Effekte findest du ebenfalls hier.",
+  "Tour_DimensionsTitle": "Abmessungen",
+  "Tour_DimensionsText": "Lege Seitenverhältnisse, Größen und Ausrichtung fest. Bei mehreren Größen wechselt Pixelery der Reihe nach oder zufällig.",
+  "Tour_WatermarkTitle": "Wasserzeichen",
+  "Tour_WatermarkText": "Optional: Text- und Bildebenen auf jedem Bild.",
+  "Tour_OutputTitle": "Ausgabe",
+  "Tour_OutputText": "Zielordner, Dateinamensschema, Formate und Dateidaten.",
+  "Tour_RunTitle": "Erzeugen",
+  "Tour_RunText": "Lege die Anzahl der Bilder fest. Derselbe Seed erzeugt dieselben Bilder erneut. Import und Export bringen deine Einstellungen auf einen anderen PC. Start beginnt den Lauf.",
+  "Tour_SlideshowTitle": "Diashow",
+  "Tour_SlideshowText": "Zeigt die gewählten Stile im Vollbild, ein Bild nach dem anderen, ohne etwas zu speichern.",
+  "Tour_SettingsTitle": "Einstellungen",
+  "Tour_SettingsText": "Hier änderst du Design, Sprache und Größe. Auch diese Tour kannst du hier erneut starten."
 }

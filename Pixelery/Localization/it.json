@@ -358,5 +358,23 @@
   "Shortcut_Start": "Avvia (generazione o presentazione, in base alla scheda)",
   "Shortcut_Cancel": "Annulla la generazione in corso",
   "Shortcut_Settings": "Apri le impostazioni",
-  "Shortcut_ToggleStyle": "Seleziona o deseleziona la scheda di stile attiva"
+  "Shortcut_ToggleStyle": "Seleziona o deseleziona la scheda di stile attiva",
+
+  "Settings_ShowTour": "Mostra di nuovo il tour",
+  "Tour_StylesTitle": "Stili",
+  "Tour_StylesText": "Scegli qui gli stili artistici. Ogni immagine usa a caso uno degli stili selezionati. Fai clic su un'anteprima per vedere lo stile in grande.",
+  "Tour_ColorsTitle": "Colori e finitura",
+  "Tour_ColorsText": "Scegli famiglie di palette e toni di sfondo, oppure un set di palette fisso. Qui trovi anche il livello di dettaglio e gli effetti di finitura.",
+  "Tour_DimensionsTitle": "Dimensioni",
+  "Tour_DimensionsText": "Imposta proporzioni, dimensioni e orientamento. Con più dimensioni, Pixelery le alterna in ordine o a caso.",
+  "Tour_WatermarkTitle": "Filigrana",
+  "Tour_WatermarkText": "Facoltativo: livelli di testo e immagine su ogni immagine.",
+  "Tour_OutputTitle": "Output",
+  "Tour_OutputText": "Scegli la cartella di destinazione, lo schema dei nomi file, i formati e le date dei file.",
+  "Tour_RunTitle": "Genera",
+  "Tour_RunText": "Imposta il numero di immagini. Lo stesso seed ricrea le stesse immagini. Importa ed esporta portano le impostazioni su un altro PC. Via! avvia la generazione.",
+  "Tour_SlideshowTitle": "Presentazione",
+  "Tour_SlideshowText": "Mostra gli stili selezionati a schermo intero, un'immagine dopo l'altra, senza salvare nulla.",
+  "Tour_SettingsTitle": "Impostazioni",
+  "Tour_SettingsText": "Qui cambi tema, lingua e dimensione. Puoi anche rivedere questo tour."
 }

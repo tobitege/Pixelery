@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added a guided tour on first start (#14). It points at the styles, colors, dimensions, watermark and output sections, the run panel, the slideshow tab and the settings, in all 12 languages. Completing or skipping it counts as seen; **Show tour again** in the settings replays it.
+
+### Changed
+
+- Update Flowery.WinUI to 1.7.0 for its `DaisyTour` control.
+
 ## [0.4.0] - 2026-10-19
 
 ### Added
