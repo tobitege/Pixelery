@@ -60,7 +60,7 @@ Extract a complete ZIP and keep all files beside the executable. The app and CLI
 
 ## 3. First steps
 
-1. Start Pixelery. The main window opens with a summary card, the configuration sections, and a run panel on the right.
+1. Start Pixelery. The main window opens with a summary card, the configuration sections, and a run panel on the right. On the first start, a short tour points at each area: use **Next** and **Back** to move through it, or **Skip** (or `Esc`) to close it. Either way it does not appear again; **Show tour again** in the settings replays it.
 2. Choose one or more **styles** in the Styles section (all styles are selected by default).
 3. Check the **Colors** section: palette families, background tone, level of detail, and finish.
 4. Check the **Dimensions** section. By default one size is selected: landscape, 16:9, 1920 px on the long edge.
@@ -344,7 +344,7 @@ See [Section 14](#14-updates).
 
 ### About
 
-Version, license and links: GitHub repository, Flowery.WinUI, and the **Open data folder** button (see [Section 16](#16-where-pixelery-stores-data)).
+Version, license and links: **Show tour again** (closes the settings and replays the first-start tour), GitHub repository, Flowery.WinUI, and the **Open data folder** button (see [Section 16](#16-where-pixelery-stores-data)).
 
 ## 14. Updates
 

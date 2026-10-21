@@ -188,6 +188,9 @@ namespace Pixelery.Services
         /// <summary>Slideshow seed; empty means a new random sequence every time.</summary>
         public static string SlideshowSeed { get; set; } = string.Empty;
 
+        /// <summary>The first-start tour was completed or skipped.</summary>
+        public static bool TourSeen { get; set; }
+
         private static void LoadOptions()
         {
             foreach (var line in StateStorageProvider.Instance.LoadLines(OptionsKey))
@@ -232,6 +235,9 @@ namespace Pixelery.Services
                     case nameof(SlideshowSeed):
                         SlideshowSeed = value;
                         break;
+                    case nameof(TourSeen) when bool.TryParse(value, out var b):
+                        TourSeen = b;
+                        break;
                 }
             }
         }
@@ -250,7 +256,8 @@ namespace Pixelery.Services
                 $"{nameof(SlideshowFullScreen)}={SlideshowFullScreen}",
                 $"{nameof(SlideshowCrossfade)}={SlideshowCrossfade}",
                 $"{nameof(SlideshowShowInfo)}={SlideshowShowInfo}",
-                $"{nameof(SlideshowSeed)}={SlideshowSeed}"
+                $"{nameof(SlideshowSeed)}={SlideshowSeed}",
+                $"{nameof(TourSeen)}={TourSeen}"
             ]);
         }
 

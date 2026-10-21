@@ -207,5 +207,8 @@
                 </Grid>
             </Border>
         </daisy:DaisyModal>
+
+        <!-- Guided tour on first start and from the settings; steps are built in code (AppShell.Tour.cs). -->
+        <daisy:DaisyTour x:Name="Tour" Grid.RowSpan="2" />
     </Grid>
 </UserControl>

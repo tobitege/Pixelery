@@ -358,5 +358,23 @@
   "Shortcut_Start": "Başlat (sekmeye göre üretim veya slayt gösterisi)",
   "Shortcut_Cancel": "Devam eden üretimi iptal et",
   "Shortcut_Settings": "Ayarları aç",
-  "Shortcut_ToggleStyle": "Odaklanan stil kartını seç veya seçimi kaldır"
+  "Shortcut_ToggleStyle": "Odaklanan stil kartını seç veya seçimi kaldır",
+
+  "Settings_ShowTour": "Turu yeniden göster",
+  "Tour_StylesTitle": "Stiller",
+  "Tour_StylesText": "Sanat stillerini burada seçin. Her görsel seçili stillerden birini rastgele kullanır. Stili büyük görmek için bir önizlemeye tıklayın.",
+  "Tour_ColorsTitle": "Renkler ve son dokunuş",
+  "Tour_ColorsText": "Palet ailelerini ve arka plan tonlarını ya da sabit bir palet setini seçin. Ayrıntı düzeyi ve son dokunuş efektleri de burada.",
+  "Tour_DimensionsTitle": "Boyutlar",
+  "Tour_DimensionsText": "En boy oranlarını, boyutları ve yönü ayarlayın. Birden fazla boyutta Pixelery sırayla ya da rastgele seçer.",
+  "Tour_WatermarkTitle": "Filigran",
+  "Tour_WatermarkText": "İsteğe bağlı: her görsele metin ve görsel katmanları.",
+  "Tour_OutputTitle": "Çıktı",
+  "Tour_OutputText": "Hedef klasörü, dosya adı kalıbını, biçimleri ve dosya tarihlerini seçin.",
+  "Tour_RunTitle": "Üret",
+  "Tour_RunText": "Görsel sayısını belirleyin. Aynı tohum aynı görselleri yeniden üretir. İçe ve dışa aktarma ayarlarınızı başka bir bilgisayara taşır. Başla üretimi başlatır.",
+  "Tour_SlideshowTitle": "Slayt gösterisi",
+  "Tour_SlideshowText": "Seçili stilleri tam ekranda, birbiri ardına ve hiçbir şey kaydetmeden gösterir.",
+  "Tour_SettingsTitle": "Ayarlar",
+  "Tour_SettingsText": "Temayı, dili ve boyutu buradan değiştirin. Bu turu da buradan yeniden gösterebilirsiniz."
 }

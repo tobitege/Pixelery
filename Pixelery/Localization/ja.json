@@ -358,5 +358,23 @@
   "Shortcut_Start": "開始（タブに応じて生成またはスライドショー）",
   "Shortcut_Cancel": "実行中の生成をキャンセル",
   "Shortcut_Settings": "設定を開く",
-  "Shortcut_ToggleStyle": "フォーカス中のスタイルカードを選択/選択解除"
+  "Shortcut_ToggleStyle": "フォーカス中のスタイルカードを選択/選択解除",
+
+  "Settings_ShowTour": "ツアーをもう一度表示",
+  "Tour_StylesTitle": "スタイル",
+  "Tour_StylesText": "ここでアートスタイルを選びます。各画像は選択したスタイルからランダムに 1 つを使います。プレビューをクリックすると大きく表示されます。",
+  "Tour_ColorsTitle": "色と仕上げ",
+  "Tour_ColorsText": "パレットファミリーと背景トーン、または固定のパレットセットを選びます。ディテールの量と仕上げ効果もここにあります。",
+  "Tour_DimensionsTitle": "サイズ",
+  "Tour_DimensionsText": "アスペクト比、サイズ、向きを設定します。複数のサイズを選ぶと、順番またはランダムに切り替わります。",
+  "Tour_WatermarkTitle": "透かし",
+  "Tour_WatermarkText": "任意: すべての画像にテキストと画像のレイヤーを追加します。",
+  "Tour_OutputTitle": "出力",
+  "Tour_OutputText": "保存先フォルダー、ファイル名のパターン、形式、ファイルの日付を選びます。",
+  "Tour_RunTitle": "生成",
+  "Tour_RunText": "画像の枚数を設定します。同じシードで同じ画像をもう一度作れます。インポートとエクスポートで設定を別の PC に移せます。スタートで生成を開始します。",
+  "Tour_SlideshowTitle": "スライドショー",
+  "Tour_SlideshowText": "選択したスタイルを全画面で 1 枚ずつ表示します。何も保存されません。",
+  "Tour_SettingsTitle": "設定",
+  "Tour_SettingsText": "テーマ、言語、サイズはここで変更します。このツアーもここからもう一度表示できます。"
 }

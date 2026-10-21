@@ -94,7 +94,7 @@ namespace Pixelery.Views
             ThemeDropdown.Size = size;
             SizeDropdown.Size = size;
             LanguageSelect.Size = size;
-            foreach (var button in new[] { GitHubButton, FloweryButton, DataFolderButton, UpdateCheckButton, UpdateInstallButton, UpdateCancelButton })
+            foreach (var button in new[] { ShowTourButton, GitHubButton, FloweryButton, DataFolderButton, UpdateCheckButton, UpdateInstallButton, UpdateCancelButton })
                 button.Size = size;
             ThemeDropdown.Width = 240 * f;
             SizeDropdown.Width = 240 * f;
@@ -241,6 +241,8 @@ namespace Pixelery.Views
                 ShortcutsGrid.Children.Add(text);
             }
         }
+
+        private void ShowTourButton_Click(object sender, RoutedEventArgs e) => _shell?.ReplayTour();
 
         private void GitHubButton_Click(object sender, RoutedEventArgs e) =>
             _ = Launcher.LaunchUriAsync(new Uri(Core.AppInfo.RepositoryUrl));

@@ -358,5 +358,23 @@
   "Shortcut_Start": "开始（根据选项卡生成图像或播放幻灯片）",
   "Shortcut_Cancel": "取消正在进行的生成",
   "Shortcut_Settings": "打开设置",
-  "Shortcut_ToggleStyle": "选择或取消选择当前聚焦的风格卡片"
+  "Shortcut_ToggleStyle": "选择或取消选择当前聚焦的风格卡片",
+
+  "Settings_ShowTour": "再次显示导览",
+  "Tour_StylesTitle": "风格",
+  "Tour_StylesText": "在这里选择艺术风格。每张图像会随机使用一种已选风格。点击预览可放大查看风格。",
+  "Tour_ColorsTitle": "颜色与效果",
+  "Tour_ColorsText": "选择调色板系列和背景色调，或使用固定的调色板集。细节程度和收尾效果也在这里。",
+  "Tour_DimensionsTitle": "尺寸",
+  "Tour_DimensionsText": "设置宽高比、尺寸和方向。选择多个尺寸时，Pixelery 会按顺序或随机使用。",
+  "Tour_WatermarkTitle": "水印",
+  "Tour_WatermarkText": "可选：为每张图像添加文字和图片图层。",
+  "Tour_OutputTitle": "输出",
+  "Tour_OutputText": "选择目标文件夹、文件名模式、格式和文件日期。",
+  "Tour_RunTitle": "生成",
+  "Tour_RunText": "设置图像数量。相同的种子会再次生成相同的图像。导入和导出可将设置带到另一台电脑。点击开始即可生成。",
+  "Tour_SlideshowTitle": "幻灯片",
+  "Tour_SlideshowText": "以全屏方式逐张显示所选风格，不保存任何内容。",
+  "Tour_SettingsTitle": "设置",
+  "Tour_SettingsText": "在这里更改主题、语言和尺寸，也可以再次显示本导览。"
 }

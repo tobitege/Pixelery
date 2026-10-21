@@ -358,5 +358,23 @@
   "Shortcut_Start": "Lancer (génération ou diaporama selon l'onglet)",
   "Shortcut_Cancel": "Annuler la génération en cours",
   "Shortcut_Settings": "Ouvrir les paramètres",
-  "Shortcut_ToggleStyle": "Sélectionner ou désélectionner la carte de style active"
+  "Shortcut_ToggleStyle": "Sélectionner ou désélectionner la carte de style active",
+
+  "Settings_ShowTour": "Revoir la visite",
+  "Tour_StylesTitle": "Styles",
+  "Tour_StylesText": "Choisissez ici les styles artistiques. Chaque image utilise au hasard l'un des styles sélectionnés. Cliquez sur un aperçu pour voir le style en grand.",
+  "Tour_ColorsTitle": "Couleurs et finition",
+  "Tour_ColorsText": "Choisissez des familles de palettes et des tons de fond, ou un jeu de palettes fixe. Le niveau de détail et les effets de finition sont aussi ici.",
+  "Tour_DimensionsTitle": "Dimensions",
+  "Tour_DimensionsText": "Définissez les formats, les tailles et l'orientation. Avec plusieurs tailles, Pixelery les parcourt dans l'ordre ou au hasard.",
+  "Tour_WatermarkTitle": "Filigrane",
+  "Tour_WatermarkText": "Facultatif : des calques de texte et d'image sur chaque image.",
+  "Tour_OutputTitle": "Sortie",
+  "Tour_OutputText": "Choisissez le dossier cible, le modèle de nom de fichier, les formats et les dates des fichiers.",
+  "Tour_RunTitle": "Générer",
+  "Tour_RunText": "Indiquez le nombre d'images. La même graine recrée les mêmes images. L'import et l'export transfèrent vos paramètres vers un autre PC. Lancer démarre la génération.",
+  "Tour_SlideshowTitle": "Diaporama",
+  "Tour_SlideshowText": "Affiche les styles sélectionnés en plein écran, une image après l'autre, sans rien enregistrer.",
+  "Tour_SettingsTitle": "Paramètres",
+  "Tour_SettingsText": "Changez ici le thème, la langue et la taille. Vous pouvez aussi revoir cette visite."
 }

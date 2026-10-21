@@ -358,5 +358,23 @@
   "Shortcut_Start": "Start (generate or slideshow, depending on the tab)",
   "Shortcut_Cancel": "Cancel the running generation",
   "Shortcut_Settings": "Open settings",
-  "Shortcut_ToggleStyle": "Select or deselect the focused style card"
+  "Shortcut_ToggleStyle": "Select or deselect the focused style card",
+
+  "Settings_ShowTour": "Show tour again",
+  "Tour_StylesTitle": "Styles",
+  "Tour_StylesText": "Pick the art styles here. Each image uses one of the selected styles at random. Click a preview to see the style large.",
+  "Tour_ColorsTitle": "Colors & finish",
+  "Tour_ColorsText": "Choose palette families and background tones, or a fixed palette set. Level of detail and finishing effects are here too.",
+  "Tour_DimensionsTitle": "Dimensions",
+  "Tour_DimensionsText": "Set aspect ratios, sizes and orientation. With several sizes, Pixelery cycles through them or picks them at random.",
+  "Tour_WatermarkTitle": "Watermark",
+  "Tour_WatermarkText": "Optional: add text and image layers to every image.",
+  "Tour_OutputTitle": "Output",
+  "Tour_OutputText": "Choose the target folder, the file name pattern, the formats and the file dates.",
+  "Tour_RunTitle": "Generate",
+  "Tour_RunText": "Set the number of images. The same seed creates the same images again. Import and export take your settings to another PC. Start begins the run.",
+  "Tour_SlideshowTitle": "Slideshow",
+  "Tour_SlideshowText": "Preview the selected styles full screen, one image after another, without saving anything.",
+  "Tour_SettingsTitle": "Settings",
+  "Tour_SettingsText": "Change the theme, language and size here. You can also show this tour again."
 }

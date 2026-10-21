@@ -15,7 +15,7 @@ using static Pixelery.Views.UiHelpers;
 namespace Pixelery.Views
 {
     /// <summary>
-    /// Application shell: title bar, the generator page, toasts, the settings dialog and the style preview dialog.
+    /// Application shell: title bar, the generator page, toasts, the settings dialog, the style preview dialog and the guided tour.
     /// </summary>
     public sealed partial class AppShell : UserControl
     {
@@ -30,7 +30,7 @@ namespace Pixelery.Views
         private bool _isPreviewRendering;
         private bool _previewSlideshowRunning;
 
-        private bool HasOpenDialog => SettingsDialog?.IsOpen == true || PreviewDialog?.IsOpen == true || WatermarkDialog?.IsOpen == true;
+        private bool HasOpenDialog => SettingsDialog?.IsOpen == true || PreviewDialog?.IsOpen == true || WatermarkDialog?.IsOpen == true || Tour.IsOpen;
 
         private void UpdateDialogInteractivity()
         {
@@ -72,13 +72,14 @@ namespace Pixelery.Views
             }));
             KeyboardAccelerators.Add(CreateAccelerator(VirtualKey.Escape, VirtualKeyModifiers.None, (_, a) =>
             {
-                if (Generator.IsRunning && SettingsDialog?.IsOpen != true && PreviewDialog?.IsOpen != true && WatermarkDialog?.IsOpen != true)
+                if (Generator.IsRunning && !HasOpenDialog)
                 {
                     Generator.CancelRun();
                     a.Handled = true;
                 }
             }));
 
+            InitializeTour();
             UpdateLocalizedChrome();
         }
 
@@ -130,6 +131,7 @@ namespace Pixelery.Views
             if (PreviewFullScreenButton != null)
                 Tip(PreviewFullScreenButton, L("Preview_FullScreen"));
             UpdatePreviewActionText();
+            UpdateTourTexts();
             if (_previewStyle != null)
             {
                 PreviewDescription.Text = L($"Style_{_previewStyle.Id}");

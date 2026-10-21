@@ -45,6 +45,7 @@ Built with [Flowery.WinUI](https://github.com/tobitege/Flowery.WinUI) (NuGet) an
 - Reproducible: the master seed plus the image index define every image; a settings file recreates a gallery on another PC
 - Cancellable progress with speed, remaining time and a live thumbnail of the latest image
 - Endless slideshow in full screen or a window, nothing saved
+- A short guided tour on first start, available again in the settings
 - Full command line control, including desktop background and screen saver
 
 ## Styles

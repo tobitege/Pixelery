@@ -77,7 +77,14 @@
                         <TextBlock Text="{Binding [App_Title]}" Style="{StaticResource AppSectionHeaderStyle}" daisy:FlowerySizeManager.ResponsiveFont="SectionHeader" />
                         <TextBlock x:Name="VersionText" Style="{StaticResource AppLabelStyle}" Opacity="0.7" daisy:FlowerySizeManager.ResponsiveFont="Primary" />
                         <TextBlock Text="{Binding [Settings_AboutText]}" Style="{StaticResource AppLabelStyle}" Opacity="0.7" daisy:FlowerySizeManager.ResponsiveFont="Primary" />
-                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                        <local:WrapPanel xmlns:local="using:Pixelery.Views" HorizontalSpacing="8" VerticalSpacing="8" Margin="0,8,0,0">
+                            <daisy:DaisyButton x:Name="ShowTourButton"
+                                               AutomationProperties.AutomationId="ShowTour"
+                                               Content="{Binding [Settings_ShowTour]}"
+                                               IconSymbol="Help"
+                                               Variant="Primary"
+                                               Size="Small"
+                                               Click="ShowTourButton_Click" />
                             <daisy:DaisyButton x:Name="GitHubButton"
                                                Content="GitHub"
                                                IconData="{StaticResource DaisyIconBrandGitHub}"
@@ -96,7 +103,7 @@
                                                Variant="Primary"
                                                Size="Small"
                                                Click="DataFolderButton_Click" />
-                        </StackPanel>
+                        </local:WrapPanel>
                     </StackPanel>
                 </Grid>
             </Border>
