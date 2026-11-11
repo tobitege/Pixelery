@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated SkiaSharp to 4.155.0 (#20, #21).
 
+### Security
+
+- Require .NET SDK 10.0.404 so releases bundle the patched .NET 10.0.15 runtime.
+
 ## [0.5.0] - 2026-10-21
 
 ### Added
